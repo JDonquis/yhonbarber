@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Closing extends Model
+{
+    use HasFactory;
+
+    public const PERIOD_DAILY = 'diario';
+
+    public const PERIOD_WEEKLY = 'semanal';
+
+    public const PERIOD_MONTHLY = 'mensual';
+
+    public const STATUS_OPEN = 'abierto';
+
+    public const STATUS_CLOSED = 'cerrado';
+
+    protected $fillable = [
+        'period_type',
+        'period_start',
+        'period_end',
+        'total_services_usd',
+        'total_products_usd',
+        'total_usd',
+        'total_ves',
+        'barber_commission_usd',
+        'shop_amount_usd',
+        'ticket_count',
+        'exchange_rate',
+        'details',
+        'status',
+        'closed_by',
+        'closed_at',
+        'reopened_by',
+        'reopened_at',
+        'notes',
+    ];
+
+    protected $casts = [
+        'period_start' => 'date',
+        'period_end' => 'date',
+        'total_services_usd' => 'decimal:2',
+        'total_products_usd' => 'decimal:2',
+        'total_usd' => 'decimal:2',
+        'total_ves' => 'decimal:2',
+        'barber_commission_usd' => 'decimal:2',
+        'shop_amount_usd' => 'decimal:2',
+        'ticket_count' => 'integer',
+        'exchange_rate' => 'decimal:4',
+        'details' => 'array',
+        'closed_at' => 'datetime',
+        'reopened_at' => 'datetime',
+    ];
+
+    public function closedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'closed_by');
+    }
+
+    public function reopenedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reopened_by');
+    }
+
+    public function isClosed(): bool
+    {
+        return $this->status === self::STATUS_CLOSED;
+    }
+}

@@ -78,6 +78,11 @@ class User extends Authenticatable
         return $this->hasMany(Sale::class, 'barber_id');
     }
 
+    public function passwordResetRequests(): HasMany
+    {
+        return $this->hasMany(PasswordResetRequest::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('active', true);

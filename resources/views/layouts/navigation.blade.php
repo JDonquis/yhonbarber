@@ -46,6 +46,18 @@
                 <x-icon name="users" class="h-5 w-5" />
                 Barberos
             </a>
+            <a href="{{ route('users.index') }}" class="{{ $linkClass(request()->routeIs('users.*')) }}">
+                <x-icon name="user" class="h-5 w-5" />
+                Usuarios
+            </a>
+            @php($pendingPasswordRequests = \App\Models\PasswordResetRequest::pending()->count())
+            <a href="{{ route('password-requests.index') }}" class="{{ $linkClass(request()->routeIs('password-requests.*')) }}">
+                <x-icon name="key" class="h-5 w-5" />
+                <span>Solicitudes</span>
+                @if ($pendingPasswordRequests > 0)
+                    <span class="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[11px] font-bold text-white">{{ $pendingPasswordRequests }}</span>
+                @endif
+            </a>
             <a href="{{ route('products.index') }}" class="{{ $linkClass(request()->routeIs('products.*')) }}">
                 <x-icon name="box" class="h-5 w-5" />
                 Productos
@@ -60,6 +72,13 @@
             </a>
         @endif
     </nav>
+
+    <div class="border-t border-slate-800 p-3">
+        <a href="{{ route('profile.edit') }}" class="{{ $linkClass(request()->routeIs('profile.*')) }}">
+            <x-icon name="user" class="h-5 w-5" />
+            Mi perfil
+        </a>
+    </div>
 
     <div class="border-t border-slate-800 p-4 text-xs text-slate-400">
         <p class="font-medium text-slate-200">{{ auth()->user()->name }}</p>

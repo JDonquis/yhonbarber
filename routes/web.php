@@ -6,10 +6,12 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExchangeRateController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PasswordResetRequestController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockMovementController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -38,6 +40,13 @@ Route::middleware('auth')->group(function () {
         Route::resource('services', ServiceController::class)->except(['show']);
         Route::resource('products', ProductController::class)->except(['show']);
         Route::resource('barbers', BarberController::class)->except(['show']);
+
+        Route::resource('users', UserController::class)->except(['show']);
+        Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+
+        Route::get('/password-requests', [PasswordResetRequestController::class, 'index'])->name('password-requests.index');
+        Route::post('/password-requests/{passwordResetRequest}/resolve', [PasswordResetRequestController::class, 'resolve'])->name('password-requests.resolve');
+        Route::delete('/password-requests/{passwordResetRequest}', [PasswordResetRequestController::class, 'destroy'])->name('password-requests.destroy');
 
         Route::get('/products/{product}/stock', [StockMovementController::class, 'index'])->name('products.stock.index');
         Route::post('/products/{product}/stock', [StockMovementController::class, 'store'])->name('products.stock.store');

@@ -1,29 +1,41 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
+        <h1 class="text-lg font-semibold text-slate-800">Mi perfil</h1>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-profile-information-form')
-                </div>
+    <div class="max-w-3xl mx-auto space-y-6">
+        <x-card title="Datos de la cuenta" description="Actualiza tu nombre, correo y teléfono de contacto">
+            <div class="p-5 sm:p-6">
+                @include('profile.partials.update-profile-information-form')
             </div>
+        </x-card>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-password-form')
-                </div>
+        <x-card id="seguridad" title="Seguridad" description="Cambia la contraseña de acceso a tu cuenta">
+            <div class="p-5 sm:p-6">
+                @include('profile.partials.update-password-form')
             </div>
+        </x-card>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
-                </div>
-            </div>
-        </div>
+        @include('profile.partials.delete-user-form')
     </div>
+
+    <script>
+        (function () {
+            var key = 'scroll:' + window.location.pathname;
+            var saved = sessionStorage.getItem(key);
+
+            if (saved === null) {
+                document.addEventListener('submit', function () {
+                    sessionStorage.setItem(key, window.scrollY);
+                });
+                return;
+            }
+
+            sessionStorage.removeItem(key);
+            var y = parseInt(saved, 10) || 0;
+            var restore = function () { window.scrollTo(0, y); };
+            document.addEventListener('DOMContentLoaded', restore);
+            window.addEventListener('load', restore);
+        })();
+    </script>
 </x-app-layout>

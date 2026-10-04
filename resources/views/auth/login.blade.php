@@ -78,6 +78,12 @@
                     </div>
                 @endif
 
+                @if (session('error'))
+                    <div class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-300">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
                 <form action="{{ route('login') }}" class="space-y-4" data-purpose="authentication-form" method="POST">
                     @csrf
 
@@ -184,7 +190,7 @@
                     </div>
 
                     <!-- BEGIN: Google OAuth Access -->
-                    @php($googleUrl = Route::has('auth.google') ? route('auth.google') : null)
+                    @php($googleUrl = (Route::has('auth.google') && config('services.google.client_id')) ? route('auth.google') : null)
                     <a href="{{ $googleUrl ?? '#' }}"
                         @unless ($googleUrl) aria-disabled="true" onclick="return false;" @endunless
                         class="w-full min-h-[46px] py-2.5 px-4 flex items-center justify-center gap-3 rounded-xl border border-slate-700 bg-[#1e293b]/70 hover:bg-[#1e293b] active:scale-[0.99] text-slate-100 font-semibold text-sm tracking-wide transition-all @unless ($googleUrl) cursor-not-allowed opacity-60 @endunless"

@@ -5,25 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
-use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
         $users = User::query()
-            ->when($request->filled('role'), fn ($query) => $query->where('role', $request->input('role')))
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $term = '%'.$request->input('search').'%';
-                $query->where(fn ($query) => $query
-                    ->where('name', 'like', $term)
-                    ->orWhere('email', 'like', $term));
-            })
+            ->orderBy('role')
             ->orderBy('name')
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
         return view('users.index', compact('users'));
     }
@@ -115,6 +108,13 @@ class UserController extends Controller
         $password = Str::password(10, symbols: false);
 
         $user->update(['password' => Hash::make($password)]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'password' => $password,
+                'name' => $user->name,
+            ]);
+        }
 
         return redirect()->route('users.index')
             ->with('status', 'Contraseña restablecida. Cópiala y entrégala al usuario.')

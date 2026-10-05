@@ -12,19 +12,11 @@ class PasswordResetRequestController extends Controller
     public function index()
     {
         $requests = PasswordResetRequest::query()
-            ->with('user')
-            ->pending()
-            ->latest()
-            ->paginate(20);
-
-        $resolved = PasswordResetRequest::query()
             ->with(['user', 'resolvedBy'])
-            ->resolved()
-            ->latest('resolved_at')
-            ->limit(10)
+            ->latest()
             ->get();
 
-        return view('password-requests.index', compact('requests', 'resolved'));
+        return view('password-requests.index', compact('requests'));
     }
 
     public function resolve(Request $request, PasswordResetRequest $passwordResetRequest)
@@ -37,6 +29,10 @@ class PasswordResetRequestController extends Controller
                 'resolved_by' => $request->user()->id,
                 'resolved_at' => now(),
             ]);
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'El usuario de esta solicitud ya no existe.'], 422);
+            }
 
             return redirect()->route('password-requests.index')
                 ->with('error', 'El usuario de esta solicitud ya no existe.');
@@ -52,6 +48,13 @@ class PasswordResetRequestController extends Controller
             'resolved_at' => now(),
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'password' => $password,
+                'name' => $user->name,
+            ]);
+        }
+
         return redirect()->route('password-requests.index')
             ->with('status', 'Contraseña restablecida. Cópiala y entrégala al usuario.')
             ->with('generated_password', $password)
@@ -65,6 +68,10 @@ class PasswordResetRequestController extends Controller
             'resolved_by' => $request->user()->id,
             'resolved_at' => now(),
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return redirect()->route('password-requests.index')
             ->with('status', 'Solicitud descartada.');

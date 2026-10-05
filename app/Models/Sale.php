@@ -51,12 +51,12 @@ class Sale extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->withTrashed();
     }
 
     public function barber(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'barber_id');
+        return $this->belongsTo(User::class, 'barber_id')->withTrashed();
     }
 
     public function items(): HasMany

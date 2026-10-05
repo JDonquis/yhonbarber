@@ -1,16 +1,26 @@
-<x-card class="border-red-200">
-    <div class="p-5 sm:p-6">
-        <h3 class="text-base font-semibold text-red-700">Eliminar cuenta</h3>
-        <p class="mt-1 text-sm text-slate-500">
+<x-card class="border-rose-200">
+    <div class="p-5">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-500">
+                <x-icon name="alert" class="h-5 w-5" />
+            </span>
+            <div>
+                <h3 class="text-sm font-bold text-rose-600">Eliminar cuenta</h3>
+                <p class="text-xs text-slate-400">Acción permanente e irreversible</p>
+            </div>
+        </div>
+
+        <p class="mt-3 text-sm leading-relaxed text-slate-500">
             Una vez eliminada tu cuenta, todos los datos asociados se borrarán de forma permanente.
             Antes de continuar, descarga cualquier información que quieras conservar.
         </p>
 
-        <x-danger-button
-            x-data=""
-            x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
-            class="mt-4"
-        >Eliminar mi cuenta</x-danger-button>
+        <button type="button"
+                x-data=""
+                x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
+                class="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-rose-50 text-sm font-bold uppercase tracking-wide text-rose-600 transition hover:bg-rose-100 active:scale-[0.985]">
+            <x-icon name="trash" class="h-5 w-5" /> Eliminar mi cuenta
+        </button>
     </div>
 
     <x-modal name="confirm-user-deletion" :show="$errors->userDeletion->isNotEmpty()" focusable>

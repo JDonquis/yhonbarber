@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Closing;
+use App\Models\Sale;
 use App\Services\ClosingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,9 +14,13 @@ class ClosingController extends Controller
 
     public function index()
     {
-        $closings = Closing::query()->with('closedBy')->latest('period_start')->paginate(15);
+        $closings = Closing::query()->with('closedBy')->latest('period_start')->get();
 
-        return view('closings.index', compact('closings'));
+        $monthStart = now()->startOfMonth();
+        $monthRevenue = (float) Sale::query()->completed()->where('sold_at', '>=', $monthStart)->sum('total_usd');
+        $monthCommission = (float) Sale::query()->completed()->where('sold_at', '>=', $monthStart)->sum('barber_commission_usd');
+
+        return view('closings.index', compact('closings', 'monthRevenue', 'monthCommission'));
     }
 
     public function generate(Request $request)

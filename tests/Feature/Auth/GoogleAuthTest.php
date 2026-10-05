@@ -16,7 +16,7 @@ class GoogleAuthTest extends TestCase
 
     private function fakeGoogleUser(string $id, string $email): SocialiteUser
     {
-        $user = new SocialiteUser();
+        $user = new SocialiteUser;
         $user->id = $id;
         $user->email = $email;
         $user->name = 'Google User';
@@ -37,6 +37,8 @@ class GoogleAuthTest extends TestCase
 
     public function test_disabled_when_not_configured(): void
     {
+        config(['services.google.client_id' => null]);
+
         $this->get(route('auth.google'))
             ->assertRedirect(route('login'))
             ->assertSessionHas('error');

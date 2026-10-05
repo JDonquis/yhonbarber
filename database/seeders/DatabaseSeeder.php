@@ -97,5 +97,7 @@ class DatabaseSeeder extends Seeder
         ] as $key => $value) {
             Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }
+
+        $this->call(SalesHistorySeeder::class);
     }
 }

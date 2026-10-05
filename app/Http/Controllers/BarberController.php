@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Sale;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,9 +13,21 @@ class BarberController extends Controller
 {
     public function index()
     {
-        $barbers = User::query()->barbers()->orderBy('name')->paginate(15);
+        $barbers = User::query()->barbers()->orderBy('name')->get();
 
-        return view('barbers.index', compact('barbers'));
+        $stats = [
+            'total' => $barbers->count(),
+            'active' => $barbers->where('active', true)->count(),
+            'inactive' => $barbers->where('active', false)->count(),
+        ];
+
+        $todayShifts = Sale::query()
+            ->where('type', Sale::TYPE_SERVICE)
+            ->whereDate('sold_at', today())
+            ->where('status', Sale::STATUS_COMPLETED)
+            ->count();
+
+        return view('barbers.index', compact('barbers', 'stats', 'todayShifts'));
     }
 
     public function create()
@@ -75,10 +88,25 @@ class BarberController extends Controller
         return redirect()->route('barbers.index')->with('status', 'Barbero actualizado.');
     }
 
+    public function toggleActive(Request $request, User $barber)
+    {
+        $barber->update(['active' => ! $barber->active]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['active' => $barber->active]);
+        }
+
+        return back()->with('status', $barber->active ? 'Barbero activado.' : 'Barbero desactivado.');
+    }
+
     public function destroy(Request $request, User $barber)
     {
         if ($barber->id === $request->user()->id) {
             return back()->with('error', 'No puedes eliminar tu propio usuario.');
+        }
+
+        if ($barber->barberSales()->exists() || $barber->sales()->exists()) {
+            return back()->with('error', 'No puedes eliminar un barbero con ventas registradas. Desactívalo para ocultarlo del equipo.');
         }
 
         $barber->delete();

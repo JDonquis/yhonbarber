@@ -51,6 +51,13 @@ class StockMovementController extends Controller
             'note' => $data['note'] ?? null,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'stock' => $newStock,
+                'quantity' => $delta,
+            ]);
+        }
+
         return redirect()->route('products.stock.index', $product)->with('status', 'Movimiento registrado.');
     }
 }

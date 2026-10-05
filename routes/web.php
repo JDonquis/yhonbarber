@@ -4,9 +4,9 @@ use App\Http\Controllers\BarberController;
 use App\Http\Controllers\ClosingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExchangeRateController;
+use App\Http\Controllers\PasswordResetRequestController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\PasswordResetRequestController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SettingController;
@@ -25,9 +25,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
     Route::get('/sales/service/create', [SaleController::class, 'createService'])->name('sales.create-service');
     Route::post('/sales/service', [SaleController::class, 'storeService'])->name('sales.store-service');
-    Route::get('/sales/product/create', [SaleController::class, 'createProduct'])->name('sales.create-product');
-    Route::post('/sales/product', [SaleController::class, 'storeProduct'])->name('sales.store-product');
     Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+    Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -37,9 +36,17 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
 
+        // Venta de productos: solo administradores
+        Route::get('/sales/product/create', [SaleController::class, 'createProduct'])->name('sales.create-product');
+        Route::post('/sales/product', [SaleController::class, 'storeProduct'])->name('sales.store-product');
+
         Route::resource('services', ServiceController::class)->except(['show']);
+        Route::post('/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('services.toggle');
+        Route::post('/services/{service}/price', [ServiceController::class, 'updatePrice'])->name('services.update-price');
         Route::resource('products', ProductController::class)->except(['show']);
+        Route::post('/products/{product}/toggle', [ProductController::class, 'toggleActive'])->name('products.toggle');
         Route::resource('barbers', BarberController::class)->except(['show']);
+        Route::post('/barbers/{barber}/toggle', [BarberController::class, 'toggleActive'])->name('barbers.toggle');
 
         Route::resource('users', UserController::class)->except(['show']);
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');

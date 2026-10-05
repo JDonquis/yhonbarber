@@ -28,10 +28,12 @@ class Closing extends Model
         'total_products_usd',
         'total_usd',
         'total_ves',
+        'total_ves_reference',
         'barber_commission_usd',
         'shop_amount_usd',
         'ticket_count',
         'exchange_rate',
+        'average_rate',
         'details',
         'status',
         'closed_by',
@@ -48,10 +50,12 @@ class Closing extends Model
         'total_products_usd' => 'decimal:2',
         'total_usd' => 'decimal:2',
         'total_ves' => 'decimal:2',
+        'total_ves_reference' => 'decimal:2',
         'barber_commission_usd' => 'decimal:2',
         'shop_amount_usd' => 'decimal:2',
         'ticket_count' => 'integer',
         'exchange_rate' => 'decimal:4',
+        'average_rate' => 'decimal:4',
         'details' => 'array',
         'closed_at' => 'datetime',
         'reopened_at' => 'datetime',
@@ -59,12 +63,12 @@ class Closing extends Model
 
     public function closedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'closed_by');
+        return $this->belongsTo(User::class, 'closed_by')->withTrashed();
     }
 
     public function reopenedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reopened_by');
+        return $this->belongsTo(User::class, 'reopened_by')->withTrashed();
     }
 
     public function isClosed(): bool

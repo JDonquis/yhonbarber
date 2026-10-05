@@ -53,6 +53,7 @@ class ClosingService
         $serviceTotal = 0.0;
         $productTotal = 0.0;
         $commission = 0.0;
+        $totalVes = 0.0;
         $services = [];
         $products = [];
         $byBarber = [];
@@ -60,14 +61,16 @@ class ClosingService
 
         foreach ($sales as $sale) {
             $commission += (float) $sale->barber_commission_usd;
+            $totalVes += (float) $sale->total_ves;
 
             $payment = $sale->payment_method ?: 'Sin especificar';
             $byPayment[$payment]['name'] = $payment;
             $byPayment[$payment]['count'] = ($byPayment[$payment]['count'] ?? 0) + 1;
             $byPayment[$payment]['total_usd'] = ($byPayment[$payment]['total_usd'] ?? 0) + (float) $sale->total_usd;
+            $byPayment[$payment]['total_ves'] = ($byPayment[$payment]['total_ves'] ?? 0) + (float) $sale->total_ves;
 
             $barberKey = $sale->barber_id ?? 0;
-            $byBarber[$barberKey]['name'] = $sale->barber->name ?? 'Sin barbero';
+            $byBarber[$barberKey]['name'] = $sale->barber->name ?? 'Venta tienda';
             $byBarber[$barberKey]['tickets'] = ($byBarber[$barberKey]['tickets'] ?? 0) + 1;
             $byBarber[$barberKey]['total_usd'] = ($byBarber[$barberKey]['total_usd'] ?? 0) + (float) $sale->total_usd;
             $byBarber[$barberKey]['commission_usd'] = ($byBarber[$barberKey]['commission_usd'] ?? 0) + (float) $sale->barber_commission_usd;
@@ -95,6 +98,7 @@ class ClosingService
             'total_services_usd' => round($serviceTotal, 2),
             'total_products_usd' => round($productTotal, 2),
             'total_usd' => round($total, 2),
+            'total_ves' => round($totalVes, 2),
             'barber_commission_usd' => round($commission, 2),
             'shop_amount_usd' => round($total - $commission, 2),
             'ticket_count' => $sales->count(),
@@ -114,7 +118,10 @@ class ClosingService
     {
         [$start, $end] = $this->periodRange($type, $date);
         $summary = $this->summarize($start, $end);
-        $rate = $this->rates->current();
+        $referenceRate = $this->rates->current();
+        $averageRate = $summary['total_usd'] > 0
+            ? round($summary['total_ves'] / $summary['total_usd'], 4)
+            : 0;
 
         $closing = Closing::query()->firstOrNew([
             'period_type' => $type,
@@ -127,8 +134,9 @@ class ClosingService
         }
 
         $closing->fill($summary + [
-            'exchange_rate' => $rate,
-            'total_ves' => round($summary['total_usd'] * $rate, 2),
+            'exchange_rate' => $referenceRate,
+            'average_rate' => $averageRate,
+            'total_ves_reference' => round($summary['total_usd'] * $referenceRate, 2),
             'status' => Closing::STATUS_OPEN,
         ]);
 
@@ -150,11 +158,15 @@ class ClosingService
 
         [$start, $end] = [$closing->period_start->copy()->startOfDay(), $closing->period_end->copy()->endOfDay()];
         $summary = $this->summarize($start, $end);
-        $rate = $this->rates->current();
+        $referenceRate = $this->rates->current();
+        $averageRate = $summary['total_usd'] > 0
+            ? round($summary['total_ves'] / $summary['total_usd'], 4)
+            : 0;
 
         $closing->fill($summary + [
-            'exchange_rate' => $rate,
-            'total_ves' => round($summary['total_usd'] * $rate, 2),
+            'exchange_rate' => $referenceRate,
+            'average_rate' => $averageRate,
+            'total_ves_reference' => round($summary['total_usd'] * $referenceRate, 2),
             'status' => Closing::STATUS_CLOSED,
             'closed_by' => $user->id,
             'closed_at' => now(),

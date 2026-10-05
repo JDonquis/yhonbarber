@@ -39,6 +39,20 @@ class DashboardController extends Controller
                 ->between($start, $end))
             ->sum('line_total_usd');
 
+        $serviceCount = SaleItem::query()
+            ->where('item_type', SaleItem::TYPE_SERVICE)
+            ->whereHas('sale', fn ($q) => $q->completed()
+                ->when($isBarber, fn ($qq) => $qq->where('barber_id', $user->id))
+                ->between($start, $end))
+            ->sum('quantity');
+
+        $productCount = SaleItem::query()
+            ->where('item_type', SaleItem::TYPE_PRODUCT)
+            ->whereHas('sale', fn ($q) => $q->completed()
+                ->when($isBarber, fn ($qq) => $qq->where('barber_id', $user->id))
+                ->between($start, $end))
+            ->sum('quantity');
+
         $monthQuery = $base()->whereBetween('sold_at', [$monthStart, $monthEnd]);
 
         $recentSales = $base()->with(['barber', 'items'])
@@ -52,7 +66,9 @@ class DashboardController extends Controller
             'todayCommission' => (clone $todaySales)->sum('barber_commission_usd'),
             'todayTickets' => (clone $todaySales)->count(),
             'serviceTotal' => $serviceTotal,
+            'serviceCount' => (int) $serviceCount,
             'productTotal' => $productTotal,
+            'productCount' => (int) $productCount,
             'monthTotal' => (clone $monthQuery)->sum('total_usd'),
             'monthCommission' => (clone $monthQuery)->sum('barber_commission_usd'),
             'lowStock' => $isBarber ? collect() : Product::query()->active()->lowStock()->orderBy('name')->get(),

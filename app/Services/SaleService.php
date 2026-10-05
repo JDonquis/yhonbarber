@@ -27,7 +27,9 @@ class SaleService
     {
         $service = Service::query()->findOrFail($data['service_id']);
         $barberId = $data['barber_id'] ?? null;
-        $total = (float) $service->price;
+        $total = array_key_exists('price', $data) && $data['price'] !== null
+            ? (float) $data['price']
+            : (float) $service->price;
         $commissionRate = (float) $this->settings->get('commission_rate', 0);
         $commission = round($total * $commissionRate / 100, 2);
 
@@ -49,9 +51,13 @@ class SaleService
                 'service_id' => $service->id,
                 'name' => $service->name,
                 'quantity' => 1,
-                'unit_price_usd' => $service->price,
+                'unit_price_usd' => $total,
                 'line_total_usd' => $total,
             ]);
+
+            if (! empty($data['update_service_price']) && (float) $service->price !== $total) {
+                $service->update(['price' => $total]);
+            }
 
             return $sale;
         });

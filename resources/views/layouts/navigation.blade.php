@@ -27,10 +27,12 @@
             <x-icon name="scissors" class="h-5 w-5" />
             Registrar corte
         </a>
-        <a href="{{ route('sales.create-product') }}" class="{{ $linkClass(request()->routeIs('sales.create-product')) }}">
-            <x-icon name="cart" class="h-5 w-5" />
-            Venta de producto
-        </a>
+        @if ($isAdmin)
+            <a href="{{ route('sales.create-product') }}" class="{{ $linkClass(request()->routeIs('sales.create-product')) }}">
+                <x-icon name="cart" class="h-5 w-5" />
+                Venta de producto
+            </a>
+        @endif
         <a href="{{ route('sales.index') }}" class="{{ $linkClass(request()->routeIs('sales.index', 'sales.show')) }}">
             <x-icon name="receipt" class="h-5 w-5" />
             Historial de ventas

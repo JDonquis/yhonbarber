@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\SaleItem;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
 
@@ -10,9 +11,30 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::query()->orderBy('name')->paginate(15);
+        $products = Product::query()
+            ->withCount('saleItems')
+            ->orderBy('name')
+            ->get();
 
-        return view('products.index', compact('products'));
+        $topItem = SaleItem::query()
+            ->where('item_type', SaleItem::TYPE_PRODUCT)
+            ->whereNotNull('product_id')
+            ->selectRaw('product_id, SUM(quantity) as units')
+            ->groupBy('product_id')
+            ->orderByDesc('units')
+            ->with('product')
+            ->first();
+
+        $stats = [
+            'total' => $products->count(),
+            'active' => $products->where('active', true)->count(),
+            'units' => (int) $products->sum('stock'),
+            'lowStock' => $products->filter(fn ($product) => $product->isLowStock())->count(),
+            'topName' => $topItem?->product?->name,
+            'topUnits' => (int) ($topItem->units ?? 0),
+        ];
+
+        return view('products.index', compact('products', 'stats'));
     }
 
     public function create()
@@ -56,9 +78,24 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
+        if ($product->saleItems()->exists()) {
+            return back()->with('error', 'No puedes eliminar un producto con ventas registradas. Desactívalo para ocultarlo del catálogo.');
+        }
+
         $product->delete();
 
         return redirect()->route('products.index')->with('status', 'Producto eliminado.');
+    }
+
+    public function toggleActive(Request $request, Product $product)
+    {
+        $product->update(['active' => ! $product->active]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['active' => $product->active]);
+        }
+
+        return back()->with('status', $product->active ? 'Producto activado.' : 'Producto desactivado.');
     }
 
     protected function validateData(Request $request): array

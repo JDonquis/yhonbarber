@@ -24,6 +24,9 @@
         $kpiCount = (int) ($isProduct ? $summary->product_count : ($isService ? $summary->service_count : $summary->count));
         $avgTicket = $kpiCount > 0 ? $kpiUsd / $kpiCount : 0;
 
+        $kpiShop = (float) ($isProduct ? $summary->product_shop_usd : ($isService ? $summary->service_shop_usd : $summary->shop_usd));
+        $kpiCommission = (float) $summary->commission_usd;
+
         $q = function (array $overrides = []) {
             $query = array_merge(request()->query(), $overrides);
             unset($query['page']);
@@ -121,25 +124,42 @@
 
         <!-- KPIs -->
         <div id="sales-summary" class="grid grid-cols-2 gap-3">
-            <div class="col-span-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <!-- Ventas brutas -->
+            <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 {{ auth()->user()->isAdmin() ? '' : 'col-span-2' }}">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ $periodLabel }} · Ventas brutas</span>
-                    <span class="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-600">
-                        <x-icon name="check" class="h-3 w-3" /> {{ $kpiCount }} trans.
-                    </span>
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ $periodLabel }}</span>
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">{{ $kpiCount }} trans.</span>
                 </div>
-                <div class="mt-2 flex flex-wrap items-baseline justify-between gap-2">
-                    <div class="flex items-baseline gap-1.5">
-                        <span class="text-3xl font-extrabold tracking-tight text-amber-600">{{ usd($kpiUsd) }}</span>
-                        <span class="text-xs text-slate-400">USD</span>
-                    </div>
-                    <div class="text-right">
-                        <span class="block text-sm font-semibold text-slate-700">{{ ves($kpiVes) }}</span>
-                        <span class="block text-[11px] text-slate-400">Ticket medio {{ usd($avgTicket) }}</span>
-                    </div>
+                <p class="mt-1.5 text-xs font-medium text-slate-500">Ventas brutas</p>
+                <div class="mt-0.5 flex items-baseline gap-1.5">
+                    <span class="text-2xl font-extrabold tracking-tight text-amber-600">{{ usd($kpiUsd) }}</span>
+                    <span class="text-[11px] text-slate-400">USD</span>
+                </div>
+                <div class="mt-1 flex items-center justify-between gap-2 text-[11px] text-slate-400">
+                    <span>{{ ves($kpiVes) }}</span>
+                    <span>Ticket {{ usd($avgTicket) }}</span>
                 </div>
             </div>
 
+            @if (auth()->user()->isAdmin())
+                <!-- Ganancia neta -->
+                <div class="rounded-xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-200">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">{{ $periodLabel }}</span>
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                            <x-icon name="dollar" class="h-4 w-4" />
+                        </span>
+                    </div>
+                    <p class="mt-1.5 text-xs font-medium text-emerald-700">Ganancia neta tienda</p>
+                    <div class="mt-0.5 flex items-baseline gap-1.5">
+                        <span class="text-2xl font-extrabold tracking-tight text-emerald-700">{{ usd($kpiShop) }}</span>
+                        <span class="text-[11px] text-emerald-700/70">USD</span>
+                    </div>
+                    <p class="mt-1 text-[11px] text-emerald-700/80">Comisiones: {{ usd($kpiCommission) }}</p>
+                </div>
+            @endif
+
+            <!-- Servicios -->
             <div class="rounded-xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200">
                 <div class="flex items-center justify-between">
                     <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
@@ -151,6 +171,7 @@
                 <span class="text-base font-bold text-slate-800">{{ usd($summary->service_usd) }}</span>
             </div>
 
+            <!-- Retail -->
             <div class="rounded-xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200">
                 <div class="flex items-center justify-between">
                     <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">

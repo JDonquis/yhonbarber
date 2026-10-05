@@ -75,11 +75,15 @@ class SaleController extends Controller
             ->selectRaw('COUNT(*) as count')
             ->selectRaw('COALESCE(SUM(total_usd), 0) as total_usd')
             ->selectRaw('COALESCE(SUM(total_ves), 0) as total_ves')
+            ->selectRaw('COALESCE(SUM(shop_amount_usd), 0) as shop_usd')
+            ->selectRaw('COALESCE(SUM(barber_commission_usd), 0) as commission_usd')
             ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN total_usd ELSE 0 END), 0) as service_usd', [Sale::TYPE_SERVICE])
             ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN total_ves ELSE 0 END), 0) as service_ves', [Sale::TYPE_SERVICE])
+            ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN shop_amount_usd ELSE 0 END), 0) as service_shop_usd', [Sale::TYPE_SERVICE])
             ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN 1 ELSE 0 END), 0) as service_count', [Sale::TYPE_SERVICE])
             ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN total_usd ELSE 0 END), 0) as product_usd', [Sale::TYPE_PRODUCT])
             ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN total_ves ELSE 0 END), 0) as product_ves', [Sale::TYPE_PRODUCT])
+            ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN shop_amount_usd ELSE 0 END), 0) as product_shop_usd', [Sale::TYPE_PRODUCT])
             ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN 1 ELSE 0 END), 0) as product_count', [Sale::TYPE_PRODUCT])
             ->first();
 

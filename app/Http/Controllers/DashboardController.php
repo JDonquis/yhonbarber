@@ -64,6 +64,7 @@ class DashboardController extends Controller
             'isBarber' => $isBarber,
             'todayTotal' => (clone $todaySales)->sum('total_usd'),
             'todayCommission' => (clone $todaySales)->sum('barber_commission_usd'),
+            'todayShopAmount' => (clone $todaySales)->sum('shop_amount_usd'),
             'todayTickets' => (clone $todaySales)->count(),
             'serviceTotal' => $serviceTotal,
             'serviceCount' => (int) $serviceCount,

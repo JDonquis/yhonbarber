@@ -706,4 +706,26 @@ class BarbershopTest extends TestCase
 
         $this->assertSoftDeleted('users', ['id' => $barber->id]);
     }
+
+    public function test_dashboard_and_history_show_store_net_earnings(): void
+    {
+        $this->setting('commission_rate', 40);
+        $service = $this->service(10);
+        $admin = $this->admin();
+        $barber = $this->barber();
+
+        $this->actingAs($admin)->post(route('sales.store-service'), [
+            'service_id' => $service->id,
+            'barber_id' => $barber->id,
+            'payment_currency' => 'USD',
+        ]);
+
+        $this->actingAs($admin)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Ganancia de la tienda');
+
+        $this->actingAs($admin)->get(route('sales.index', ['period' => 'all']))
+            ->assertOk()
+            ->assertSee('Ganancia neta');
+    }
 }

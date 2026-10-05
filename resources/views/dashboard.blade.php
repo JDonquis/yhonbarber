@@ -76,6 +76,22 @@
             </div>
         </section>
 
+        @unless ($isBarber)
+            <!-- Ganancia de la tienda (neto del día) -->
+            <section class="flex items-center justify-between gap-3 rounded-xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-200">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                        <x-icon name="dollar" class="h-5 w-5" />
+                    </span>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Ganancia de la tienda hoy</p>
+                        <p class="text-[11px] text-emerald-700">Neto del estudio (ventas − comisiones)</p>
+                    </div>
+                </div>
+                <span class="shrink-0 text-2xl font-extrabold tracking-tight text-emerald-700">{{ usd($todayShopAmount) }}</span>
+            </section>
+        @endunless
+
         <!-- Tasa del día -->
         <section class="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <div class="mb-2 flex items-center justify-between">

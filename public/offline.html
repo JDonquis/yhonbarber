@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f59e0b">
+    <title>Sin conexión · MR Yhon Barber Studio</title>
+    <style>
+        :root { color-scheme: dark; }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 32px 20px;
+            background: radial-gradient(circle at 50% 12%, rgba(245, 158, 11, 0.18) 0%, #0b1326 68%);
+            color: #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            text-align: center;
+        }
+
+        .brand { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+        .logo {
+            width: 84px;
+            height: 84px;
+            object-fit: contain;
+            padding: 10px;
+            border-radius: 18px;
+            background: #0f172a;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.35);
+        }
+
+        h1 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+
+        .accent { color: #f59e0b; }
+
+        p { margin: 0; max-width: 320px; font-size: 13px; line-height: 1.5; color: #94a3b8; }
+
+        button {
+            margin-top: 6px;
+            padding: 13px 26px;
+            border: 0;
+            border-radius: 12px;
+            background: linear-gradient(to right, #f59e0b, #fbbf24);
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            box-shadow: 0 8px 24px -6px rgba(245, 158, 11, 0.5);
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .hint { font-size: 11px; color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="brand">
+        <img src="/logo.jpeg" alt="MR Yhon Barber Studio" class="logo">
+        <h1>MR YHON <span class="accent">BARBER STUDIO</span></h1>
+    </div>
+
+    <p><strong style="color:#f8fafc">Sin conexión.</strong><br>
+        No pudimos cargar la aplicación. Revisa tu conexión a internet e inténtalo de nuevo.</p>
+
+    <button type="button" onclick="location.reload()">Reintentar</button>
+
+    <span class="hint">Los datos se muestran siempre en línea</span>
+</body>
+</html>

@@ -13,6 +13,8 @@
         <style>[x-cloak] { display: none !important; }</style>
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        @include('partials.pwa')
     </head>
     <body class="font-sans antialiased bg-slate-100 text-slate-800">
         <div x-data="{ sidebarOpen: false }" class="min-h-screen lg:flex">

@@ -12,6 +12,8 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    @include('partials.pwa')
+
     <style data-purpose="ambient-lighting">
         .glow-amber-radial {
             background: radial-gradient(circle at 50% 15%, rgba(245, 158, 11, 0.18) 0%, rgba(11, 19, 38, 0) 70%);

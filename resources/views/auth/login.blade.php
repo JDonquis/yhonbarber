@@ -220,8 +220,9 @@
             data-purpose="app-footer">
             <div>
                 <span>¿Necesitas asistencia técnica? </span>
-                <a class="text-amber-400 hover:text-amber-300 font-medium underline underline-offset-2" href="#soporte">
-                    Contactar soporte
+                <a class="text-amber-400 hover:text-amber-300 font-medium underline underline-offset-2"
+                   href="mailto:juandonquis07@gmail.com">
+                    juandonquis07@gmail.com
                 </a>
             </div>
             <div class="text-[11px] text-slate-500 font-medium">

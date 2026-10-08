@@ -26,6 +26,8 @@
 
         $kpiShop = (float) ($isProduct ? $summary->product_shop_usd : ($isService ? $summary->service_shop_usd : $summary->shop_usd));
         $kpiCommission = (float) $summary->commission_usd;
+        $kpiExpenses = (float) ($expensesUsd ?? 0);
+        $kpiNet = $kpiShop - $kpiExpenses;
 
         $q = function (array $overrides = []) {
             $query = array_merge(request()->query(), $overrides);
@@ -152,10 +154,13 @@
                     </div>
                     <p class="mt-1.5 text-xs font-medium text-emerald-700">Ganancia neta tienda</p>
                     <div class="mt-0.5 flex items-baseline gap-1.5">
-                        <span class="text-2xl font-extrabold tracking-tight text-emerald-700">{{ usd($kpiShop) }}</span>
+                        <span class="text-2xl font-extrabold tracking-tight text-emerald-700">{{ usd($kpiNet) }}</span>
                         <span class="text-[11px] text-emerald-700/70">USD</span>
                     </div>
-                    <p class="mt-1 text-[11px] text-emerald-700/80">Comisiones: {{ usd($kpiCommission) }}</p>
+                    <div class="mt-1 flex items-center justify-between gap-2 text-[11px] text-emerald-700/80">
+                        <span>Comisiones: {{ usd($kpiCommission) }}</span>
+                        <span>Gastos: {{ usd($kpiExpenses) }}</span>
+                    </div>
                 </div>
             @endif
 

@@ -33,6 +33,7 @@ class ResetSystem extends Command
         'stock_movements',
         'sales',
         'closings',
+        'expenses',
         'products',
         'services',
         'exchange_rates',

@@ -68,6 +68,10 @@
                 <x-icon name="chart" class="h-5 w-5" />
                 Cierres
             </a>
+            <a href="{{ route('expenses.index') }}" class="{{ $linkClass(request()->routeIs('expenses.*')) }}">
+                <x-icon name="minus" class="h-5 w-5" />
+                Gastos
+            </a>
             <a href="{{ route('settings.edit') }}" class="{{ $linkClass(request()->routeIs('settings.*')) }}">
                 <x-icon name="cog" class="h-5 w-5" />
                 Configuración

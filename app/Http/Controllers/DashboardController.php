@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -60,11 +61,18 @@ class DashboardController extends Controller
             ->take(8)
             ->get();
 
+        $todayExpenses = (float) Expense::query()->betweenDates($start, $end)->sum('amount_usd');
+        $monthExpenses = (float) Expense::query()->betweenDates($monthStart, $monthEnd)->sum('amount_usd');
+
+        $todayShopGross = (float) (clone $todaySales)->sum('shop_amount_usd');
+        $monthShopGross = (float) (clone $monthQuery)->sum('total_usd') - (float) (clone $monthQuery)->sum('barber_commission_usd');
+
         return view('dashboard', [
             'isBarber' => $isBarber,
             'todayTotal' => (clone $todaySales)->sum('total_usd'),
             'todayCommission' => (clone $todaySales)->sum('barber_commission_usd'),
-            'todayShopAmount' => (clone $todaySales)->sum('shop_amount_usd'),
+            'todayShopAmount' => round($todayShopGross - $todayExpenses, 2),
+            'todayExpenses' => $todayExpenses,
             'todayTickets' => (clone $todaySales)->count(),
             'serviceTotal' => $serviceTotal,
             'serviceCount' => (int) $serviceCount,
@@ -72,6 +80,8 @@ class DashboardController extends Controller
             'productCount' => (int) $productCount,
             'monthTotal' => (clone $monthQuery)->sum('total_usd'),
             'monthCommission' => (clone $monthQuery)->sum('barber_commission_usd'),
+            'monthShopAmount' => round($monthShopGross - $monthExpenses, 2),
+            'monthExpenses' => $monthExpenses,
             'lowStock' => $isBarber ? collect() : Product::query()->active()->lowStock()->orderBy('name')->get(),
             'topBarbers' => $isBarber ? collect() : $this->topBarbers($monthStart, $monthEnd),
             'recentSales' => $recentSales,

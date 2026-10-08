@@ -16,6 +16,8 @@
             'products' => (float) $closing->total_products_usd,
             'commission' => (float) $closing->barber_commission_usd,
             'commissionPct' => $total > 0 ? (int) round((float) $closing->barber_commission_usd / $total * 100) : 0,
+            'expenses' => (float) $closing->total_expenses_usd,
+            'net' => (float) $closing->shop_amount_usd,
             'total' => $total,
             'tickets' => (int) $closing->ticket_count,
             'serviceQty' => (int) $services->sum('quantity'),
@@ -77,19 +79,42 @@
             </div>
 
             <!-- Resumen del mes -->
-            <div class="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <div class="flex items-center gap-3">
-                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-600">
                         <x-icon name="dollar" class="h-5 w-5" />
                     </span>
-                    <div>
+                    <div class="min-w-0">
                         <span class="block text-xs text-slate-400">Recaudado este mes</span>
-                        <span class="text-sm font-bold tracking-tight text-slate-800">{{ usd($monthRevenue) }} USD</span>
+                        <span class="block truncate text-sm font-bold tracking-tight text-slate-800">{{ usd($monthRevenue) }}</span>
                     </div>
                 </div>
-                <div class="text-right">
-                    <span class="block text-xs text-slate-400">Comisiones liq.</span>
-                    <span class="text-sm font-bold text-amber-600">{{ usd($monthCommission) }} USD</span>
+                <div class="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                        <x-icon name="users" class="h-5 w-5" />
+                    </span>
+                    <div class="min-w-0">
+                        <span class="block text-xs text-slate-400">Comisiones liq.</span>
+                        <span class="block truncate text-sm font-bold tracking-tight text-amber-600">{{ usd($monthCommission) }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                        <x-icon name="minus" class="h-5 w-5" />
+                    </span>
+                    <div class="min-w-0">
+                        <span class="block text-xs text-slate-400">Gastos este mes</span>
+                        <span class="block truncate text-sm font-bold tracking-tight text-rose-600">{{ usd($monthExpenses) }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 rounded-xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-200">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                        <x-icon name="dollar" class="h-5 w-5" />
+                    </span>
+                    <div class="min-w-0">
+                        <span class="block text-xs font-bold text-emerald-700">Ganancia tienda</span>
+                        <span class="block truncate text-sm font-extrabold tracking-tight text-emerald-700">{{ usd($monthShopAmount) }}</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -223,8 +248,17 @@
                             <span class="text-[10px] text-slate-400">Reparto <span x-text="closing.commissionPct"></span>%</span>
                         </div>
                         <div class="pt-1">
+                            <span class="text-xs text-slate-400">Gastos</span>
+                            <p class="text-sm font-semibold text-rose-600" x-text="formatUsd(closing.expenses)"></p>
+                            <span class="text-[10px] text-slate-400">Egresos del período</span>
+                        </div>
+                        <div class="pt-1">
                             <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total USD</span>
                             <p class="text-xl font-extrabold leading-tight text-amber-600" x-text="formatUsd(closing.total)"></p>
+                        </div>
+                        <div class="pt-1">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Ganancia tienda</span>
+                            <p class="text-xl font-extrabold leading-tight text-emerald-600" x-text="formatUsd(closing.net)"></p>
                         </div>
                     </div>
 

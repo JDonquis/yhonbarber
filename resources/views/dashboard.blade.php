@@ -85,7 +85,8 @@
                     </span>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Ganancia de la tienda hoy</p>
-                        <p class="text-[11px] text-emerald-700">Neto del estudio (ventas − comisiones)</p>
+                        <p class="text-[11px] text-emerald-700">Ventas − comisiones − gastos ({{ usd($todayExpenses) }} en gastos)</p>
+                        <p class="text-[11px] text-emerald-700/80">Mes: {{ usd($monthShopAmount) }} · Gastos del mes: {{ usd($monthExpenses) }}</p>
                     </div>
                 </div>
                 <span class="shrink-0 text-2xl font-extrabold tracking-tight text-emerald-700">{{ usd($todayShopAmount) }}</span>

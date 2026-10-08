@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Closing;
+use App\Models\Expense;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\User;
@@ -94,19 +95,34 @@ class ClosingService
 
         $total = $serviceTotal + $productTotal;
 
+        $expenses = Expense::query()
+            ->betweenDates($start, $end)
+            ->orderBy('expense_date')
+            ->orderBy('id')
+            ->get();
+        $expensesTotal = (float) $expenses->sum('amount_usd');
+
         return [
             'total_services_usd' => round($serviceTotal, 2),
             'total_products_usd' => round($productTotal, 2),
             'total_usd' => round($total, 2),
             'total_ves' => round($totalVes, 2),
             'barber_commission_usd' => round($commission, 2),
-            'shop_amount_usd' => round($total - $commission, 2),
+            'total_expenses_usd' => round($expensesTotal, 2),
+            'shop_amount_usd' => round($total - $commission - $expensesTotal, 2),
             'ticket_count' => $sales->count(),
             'details' => [
                 'barberos' => array_values($byBarber),
                 'metodos_pago' => array_values($byPayment),
                 'servicios' => array_values($services),
                 'productos' => array_values($products),
+                'gastos' => $expenses->map(fn (Expense $expense) => [
+                    'id' => $expense->id,
+                    'concept' => $expense->concept,
+                    'amount_usd' => (float) $expense->amount_usd,
+                    'date' => $expense->expense_date->format('d/m/Y'),
+                    'notes' => $expense->notes,
+                ])->values()->all(),
             ],
         ];
     }

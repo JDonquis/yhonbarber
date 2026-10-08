@@ -11,6 +11,18 @@
     <div class="max-w-2xl mx-auto space-y-4" x-data="{
         commission: {{ (float) old('commission_rate', $values['commission_rate'] ?? 0) }},
         methods: @js(old('payment_methods', $values['payment_methods'] ?? '')),
+        barberList: @js($barbersData),
+        barberSelected: @js(old('barber_id')),
+        barberRate: @js(old('barber_commission_rate')),
+        barberUseBase: {{ old('barber_use_base') ? 'true' : 'false' }},
+        get selectedBarber() { return this.barberList.find((barber) => String(barber.id) === String(this.barberSelected)); },
+        selectBarberCommission(id) {
+            this.barberSelected = String(id);
+            const barber = this.selectedBarber;
+            const custom = barber ? !! barber.custom : false;
+            this.barberUseBase = ! custom;
+            this.barberRate = custom ? Number(barber.rate) : '';
+        },
         get methodList() {
             return (this.methods || '').split(',').map((method) => method.trim()).filter(Boolean);
         }
@@ -182,6 +194,95 @@
                 <p class="text-[11px] leading-relaxed text-slate-400">
                     La tienda absorbe insumos e infraestructura reteniendo el porcentaje restante. Aplica solo a tarifas de servicios, no a venta de productos retail.
                 </p>
+
+                <div class="h-px w-full bg-slate-100"></div>
+
+                <!-- Comisión personalizada por barbero -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            <x-icon name="users" class="h-4 w-4 text-emerald-500" /> Comisiones por barbero
+                        </span>
+                        <span class="text-[11px] text-slate-400">Se guarda con la configuración</span>
+                    </div>
+
+                    @if ($barbersData->isEmpty())
+                        <p class="rounded-xl bg-slate-50 px-4 py-6 text-center text-xs text-slate-400">No hay barberos registrados.</p>
+                    @else
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <x-input-label for="barber_id" value="Barbero" />
+                                <span class="text-[11px] text-slate-400">Toca para seleccionar</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                @foreach ($barbersData as $barber)
+                                    @php
+                                        $initials = collect(explode(' ', trim($barber['name'])))
+                                            ->filter()
+                                            ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
+                                            ->take(2)
+                                            ->implode('');
+                                    @endphp
+                                    <button type="button" @click="selectBarberCommission({{ $barber['id'] }})"
+                                            :class="barberSelected === '{{ $barber['id'] }}' ? 'ring-2 ring-amber-500 bg-amber-50' : 'bg-slate-50 hover:bg-slate-100'"
+                                            class="flex flex-col items-center gap-1.5 rounded-xl p-2.5 transition">
+                                        <span class="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold transition"
+                                              :class="barberSelected === '{{ $barber['id'] }}' ? 'bg-amber-500 text-slate-900' : 'bg-slate-200 text-slate-600'">
+                                            {{ $initials }}
+                                        </span>
+                                        <span class="w-full truncate text-center text-xs font-medium transition"
+                                              :class="barberSelected === '{{ $barber['id'] }}' ? 'text-amber-600 font-semibold' : 'text-slate-600'">
+                                            {{ $barber['name'] }}
+                                        </span>
+                                        <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide {{ $barber['custom'] ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500' }}">
+                                            {{ $barber['custom'] ? 'Personalizada' : 'Base' }}
+                                        </span>
+                                    </button>
+                                @endforeach
+                            </div>
+                            <input type="hidden" name="barber_id" :value="barberSelected">
+                            <x-input-error :messages="$errors->get('barber_id')" />
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <x-input-label for="barber_commission_rate" value="Comisión de este barbero (%)" />
+                                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                                    Base: {{ rtrim(rtrim(number_format($baseCommission, 2), '0'), '.') }}%
+                                </span>
+                            </div>
+                            <div class="relative">
+                                <input id="barber_commission_rate" name="barber_commission_rate" type="number" step="0.01" min="0" max="100"
+                                       x-model="barberRate" :disabled="barberUseBase"
+                                       placeholder="{{ rtrim(rtrim(number_format($baseCommission, 2), '0'), '.') }}"
+                                       class="block h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 pr-12 text-right text-lg font-bold text-slate-800 focus:border-amber-500 focus:bg-white focus:ring-amber-500 disabled:opacity-50" />
+                                <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-lg font-bold text-emerald-500">%</span>
+                            </div>
+                            <label class="flex cursor-pointer items-center gap-2 text-xs text-slate-500">
+                                <input type="checkbox" name="barber_use_base" value="1" x-model="barberUseBase"
+                                       class="rounded border-slate-300 text-emerald-500 shadow-sm focus:ring-emerald-500">
+                                Usar la comisión base del estudio
+                            </label>
+                            <x-input-error :messages="$errors->get('barber_commission_rate')" />
+                        </div>
+
+                        <div class="space-y-1.5 border-t border-slate-100 pt-3">
+                            @foreach ($barbersData as $barber)
+                                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                                    <span class="truncate text-sm text-slate-700">{{ $barber['name'] }}</span>
+                                    <span class="flex items-center gap-2">
+                                        <span class="text-sm font-bold {{ $barber['custom'] ? 'text-emerald-600' : 'text-slate-500' }}">
+                                            {{ rtrim(rtrim(number_format($barber['rate'], 2), '0'), '.') }}%
+                                        </span>
+                                        <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide {{ $barber['custom'] ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500' }}">
+                                            {{ $barber['custom'] ? 'Personalizada' : 'Base' }}
+                                        </span>
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
             </section>
 
             <!-- Canales de pago y tasa -->

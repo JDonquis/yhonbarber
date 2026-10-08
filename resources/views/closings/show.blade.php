@@ -3,6 +3,8 @@
     $products = collect($closing->details['productos'] ?? []);
     $barbers = collect($closing->details['barberos'] ?? []);
     $methods = collect($closing->details['metodos_pago'] ?? []);
+    $expenses = collect($closing->details['gastos'] ?? []);
+    $expensesTotal = (float) $closing->total_expenses_usd;
 
     $serviceQty = (int) $services->sum('quantity');
     $productQty = (int) $products->sum('quantity');
@@ -100,15 +102,28 @@
                 <span class="text-[11px] font-semibold text-emerald-600">A liquidar staff · {{ $commissionPct }}%</span>
             </div>
 
-            <div class="flex flex-col justify-between rounded-xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-200">
+            <div class="flex flex-col justify-between rounded-xl bg-rose-50 p-4 shadow-sm ring-1 ring-rose-200">
                 <div class="mb-2 flex items-center justify-between gap-2">
-                    <span class="truncate text-xs font-bold text-emerald-700">Monto tienda</span>
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
-                        <x-icon name="dollar" class="h-4 w-4" />
+                    <span class="truncate text-xs text-rose-700">Gastos</span>
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-500 text-white">
+                        <x-icon name="minus" class="h-4 w-4" />
                     </span>
                 </div>
-                <span class="truncate text-lg font-extrabold tracking-tight text-emerald-700">{{ usd($closing->shop_amount_usd) }}</span>
-                <span class="text-[11px] text-emerald-700">Neto libre estudio</span>
+                <span class="truncate text-lg font-bold tracking-tight text-rose-700">{{ usd($expensesTotal) }}</span>
+                <span class="text-[11px] text-rose-700">{{ $expenses->count() }} egreso(s) del período</span>
+            </div>
+
+            <div class="col-span-2 flex items-center justify-between gap-3 rounded-xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-200">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                        <x-icon name="dollar" class="h-5 w-5" />
+                    </span>
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Monto tienda</span>
+                        <span class="block text-[11px] text-emerald-700">Ventas − comisiones − gastos</span>
+                    </div>
+                </div>
+                <span class="shrink-0 text-2xl font-extrabold tracking-tight text-emerald-700">{{ usd($closing->shop_amount_usd) }}</span>
             </div>
         </section>
 
@@ -153,6 +168,18 @@
                         <div class="flex items-center justify-between">
                             <span class="text-slate-500">Equivalente a tasa de cierre</span>
                             <span class="font-semibold text-slate-500">{{ ves($closing->total_ves_reference > 0 ? $closing->total_ves_reference : to_ves($closing->total_usd, (float) $closing->exchange_rate)) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-slate-200 pt-2">
+                            <span class="text-slate-500">Comisiones barberos</span>
+                            <span class="font-semibold text-amber-600">- {{ usd($closing->barber_commission_usd) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-500">Gastos del período</span>
+                            <span class="font-semibold text-rose-600">- {{ usd($closing->total_expenses_usd) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-emerald-700">Ganancia neta tienda</span>
+                            <span class="font-extrabold text-emerald-700">{{ usd($closing->shop_amount_usd) }}</span>
                         </div>
                     </div>
                 </div>
@@ -238,6 +265,35 @@
                     <p class="rounded-lg bg-slate-50 px-3 py-6 text-center text-xs text-slate-400">Sin datos.</p>
                 @endforelse
             </div>
+        </section>
+
+        <!-- Gastos del período -->
+        <section class="space-y-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-sm font-bold text-slate-800">
+                    <x-icon name="minus" class="h-5 w-5 text-rose-500" /> Gastos del período
+                </span>
+                <span class="text-xs text-slate-400">{{ $expenses->count() }} registro(s)</span>
+            </div>
+            <div class="space-y-1.5">
+                @forelse ($expenses as $row)
+                    <div class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold text-slate-700">{{ $row['concept'] }}</p>
+                            <p class="text-xs text-slate-400">{{ $row['date'] }}@if (! empty($row['notes'])) · {{ $row['notes'] }}@endif</p>
+                        </div>
+                        <span class="shrink-0 text-sm font-bold text-rose-600">- {{ usd($row['amount_usd']) }}</span>
+                    </div>
+                @empty
+                    <p class="rounded-lg bg-slate-50 px-3 py-6 text-center text-xs text-slate-400">Sin gastos registrados en este período.</p>
+                @endforelse
+            </div>
+            @if ($expenses->isNotEmpty())
+                <div class="flex items-center justify-between rounded-lg bg-rose-50 px-3 py-2.5 ring-1 ring-rose-100">
+                    <span class="text-xs font-bold uppercase tracking-wider text-rose-700">Total gastos</span>
+                    <span class="text-sm font-extrabold text-rose-700">- {{ usd($expensesTotal) }}</span>
+                </div>
+            @endif
         </section>
 
         <!-- Servicios vendidos -->

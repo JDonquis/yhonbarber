@@ -30,7 +30,9 @@ class SaleService
         $total = array_key_exists('price', $data) && $data['price'] !== null
             ? (float) $data['price']
             : (float) $service->price;
-        $commissionRate = (float) $this->settings->get('commission_rate', 0);
+        $baseRate = (float) $this->settings->get('commission_rate', 0);
+        $barber = $barberId ? User::query()->find($barberId) : null;
+        $commissionRate = $barber ? $barber->effectiveCommissionRate($baseRate) : $baseRate;
         $commission = round($total * $commissionRate / 100, 2);
 
         return DB::transaction(function () use ($service, $total, $commission, $commissionRate, $data, $registeredBy, $barberId) {

@@ -4,6 +4,7 @@ use App\Http\Controllers\BarberController;
 use App\Http\Controllers\ClosingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExchangeRateController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\PasswordResetRequestController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -57,6 +58,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/products/{product}/stock', [StockMovementController::class, 'index'])->name('products.stock.index');
         Route::post('/products/{product}/stock', [StockMovementController::class, 'store'])->name('products.stock.store');
+
+        Route::resource('expenses', ExpenseController::class)->except(['show']);
 
         Route::get('/closings', [ClosingController::class, 'index'])->name('closings.index');
         Route::post('/closings', [ClosingController::class, 'generate'])->name('closings.generate');

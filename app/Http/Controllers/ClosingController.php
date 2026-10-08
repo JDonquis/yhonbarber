@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Closing;
+use App\Models\Expense;
 use App\Models\Sale;
 use App\Services\ClosingService;
 use Carbon\Carbon;
@@ -19,8 +20,10 @@ class ClosingController extends Controller
         $monthStart = now()->startOfMonth();
         $monthRevenue = (float) Sale::query()->completed()->where('sold_at', '>=', $monthStart)->sum('total_usd');
         $monthCommission = (float) Sale::query()->completed()->where('sold_at', '>=', $monthStart)->sum('barber_commission_usd');
+        $monthExpenses = (float) Expense::query()->betweenDates($monthStart, now()->endOfMonth())->sum('amount_usd');
+        $monthShopAmount = round($monthRevenue - $monthCommission - $monthExpenses, 2);
 
-        return view('closings.index', compact('closings', 'monthRevenue', 'monthCommission'));
+        return view('closings.index', compact('closings', 'monthRevenue', 'monthCommission', 'monthExpenses', 'monthShopAmount'));
     }
 
     public function generate(Request $request)

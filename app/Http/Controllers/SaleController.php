@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\Service;
@@ -87,18 +88,33 @@ class SaleController extends Controller
             ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN 1 ELSE 0 END), 0) as product_count', [Sale::TYPE_PRODUCT])
             ->first();
 
+        $expensesQuery = Expense::query();
+        if ($from) {
+            $expensesQuery->whereDate('expense_date', '>=', $from);
+        }
+        if ($to) {
+            $expensesQuery->whereDate('expense_date', '<=', $to);
+        }
+        $expensesUsd = (float) $expensesQuery->sum('amount_usd');
+
         $barbers = User::query()->barbers()->orderBy('name')->get();
 
-        return view('sales.index', compact('sales', 'barbers', 'summary', 'from', 'to', 'period'));
+        return view('sales.index', compact('sales', 'barbers', 'summary', 'from', 'to', 'period', 'expensesUsd'));
     }
 
     public function createService()
     {
+        $commissionRate = (float) app(SettingService::class)->get('commission_rate', 0);
+        $barbers = User::query()->active()->barbers()->orderBy('name')->get();
+
         return view('sales.create-service', [
             'services' => Service::query()->active()->orderBy('name')->get(),
-            'barbers' => User::query()->active()->barbers()->orderBy('name')->get(),
+            'barbers' => $barbers,
+            'barberRates' => $barbers
+                ->mapWithKeys(fn (User $barber) => [$barber->id => $barber->effectiveCommissionRate($commissionRate)])
+                ->all(),
             'paymentMethods' => payment_methods(),
-            'commissionRate' => (float) app(SettingService::class)->get('commission_rate', 0),
+            'commissionRate' => $commissionRate,
         ]);
     }
 

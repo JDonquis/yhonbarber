@@ -104,7 +104,7 @@
         /* KPI cards */
         .kpis {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 10px;
             margin: 22px 0;
         }
@@ -240,6 +240,7 @@
         @php
             $services = collect($closing->details['servicios'] ?? []);
             $products = collect($closing->details['productos'] ?? []);
+            $expenses = collect($closing->details['gastos'] ?? []);
             $serviceQty = (int) $services->sum('quantity');
             $productQty = (int) $products->sum('quantity');
             $reference = $closing->total_ves_reference > 0
@@ -264,10 +265,15 @@
                 <div class="value">{{ usd($closing->barber_commission_usd) }}</div>
                 <div class="hint">A liquidar staff</div>
             </div>
+            <div class="kpi">
+                <div class="label">Gastos</div>
+                <div class="value">{{ usd($closing->total_expenses_usd) }}</div>
+                <div class="hint">{{ $expenses->count() }} egresos</div>
+            </div>
             <div class="kpi highlight">
                 <div class="label">Monto tienda</div>
                 <div class="value">{{ usd($closing->shop_amount_usd) }}</div>
-                <div class="hint">Neto libre estudio</div>
+                <div class="hint">Ventas − comisiones − gastos</div>
             </div>
         </div>
 
@@ -310,6 +316,18 @@
                 <div class="row">
                     <span class="muted">Equivalente a tasa de cierre</span>
                     <span class="amount">{{ ves($reference) }}</span>
+                </div>
+                <div class="row">
+                    <span class="muted">Comisiones barberos</span>
+                    <span class="amount">- {{ usd($closing->barber_commission_usd) }}</span>
+                </div>
+                <div class="row">
+                    <span class="muted">Gastos del período</span>
+                    <span class="amount">- {{ usd($closing->total_expenses_usd) }}</span>
+                </div>
+                <div class="row main">
+                    <span class="strong">Ganancia neta tienda</span>
+                    <span class="amount emerald">{{ usd($closing->shop_amount_usd) }}</span>
                 </div>
             </div>
         </section>
@@ -363,6 +381,31 @@
                 </table>
             </section>
         </div>
+
+        <!-- Gastos del período -->
+        <section>
+            <div class="section-head">
+                <h2>Gastos registrados</h2>
+                <span>{{ $expenses->count() }} registros</span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Fecha</th><th>Concepto</th><th>Nota</th><th class="text-right">Monto</th></tr>
+                </thead>
+                <tbody>
+                    @forelse ($expenses as $row)
+                        <tr>
+                            <td>{{ $row['date'] }}</td>
+                            <td>{{ $row['concept'] }}</td>
+                            <td class="muted">{{ $row['notes'] ?? '—' }}</td>
+                            <td class="text-right strong">- {{ usd($row['amount_usd']) }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4" class="empty">Sin gastos registrados en este período.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </section>
 
         <!-- Servicios / productos vendidos -->
         <div class="two-col">

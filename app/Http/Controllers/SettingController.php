@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\SettingService;
 use Illuminate\Http\Request;
 
@@ -11,8 +12,19 @@ class SettingController extends Controller
 
     public function edit()
     {
+        $baseCommission = (float) $this->settings->get('commission_rate', 0);
+        $barbers = User::query()->barbers()->orderBy('name')->get();
+
         return view('settings.edit', [
             'values' => $this->settings->all(),
+            'baseCommission' => $baseCommission,
+            'barbersData' => $barbers->map(fn (User $barber) => [
+                'id' => $barber->id,
+                'name' => $barber->name,
+                'active' => (bool) $barber->active,
+                'rate' => $barber->effectiveCommissionRate($baseCommission),
+                'custom' => $barber->commission_rate !== null && (float) $barber->commission_rate !== $baseCommission,
+            ])->values(),
         ]);
     }
 
@@ -28,6 +40,9 @@ class SettingController extends Controller
             'dolar_api_source' => ['required', 'in:oficial,paralelo'],
             'exchange_rate_manual' => ['nullable', 'numeric', 'min:0'],
             'exchange_rate_fallback' => ['nullable', 'numeric', 'min:0'],
+            'barber_id' => ['nullable', 'integer', 'exists:users,id'],
+            'barber_commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'barber_use_base' => ['nullable', 'boolean'],
         ]);
 
         $this->settings->setMany([
@@ -41,6 +56,18 @@ class SettingController extends Controller
             'exchange_rate_manual' => $data['exchange_rate_manual'] ?? '',
             'exchange_rate_fallback' => $data['exchange_rate_fallback'] ?? '',
         ]);
+
+        if (! empty($data['barber_id'])) {
+            $barber = User::query()->barbers()->find($data['barber_id']);
+
+            if ($barber) {
+                $rate = $request->boolean('barber_use_base') || ($data['barber_commission_rate'] ?? null) === null
+                    ? null
+                    : $data['barber_commission_rate'];
+
+                $barber->update(['commission_rate' => $rate]);
+            }
+        }
 
         return redirect()->route('settings.edit')->with('status', 'Configuración guardada.');
     }

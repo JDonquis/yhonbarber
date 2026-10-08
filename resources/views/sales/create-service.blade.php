@@ -23,6 +23,7 @@
         updateServicePrice: false,
         rate: {{ (float) $currentRate }},
         commissionRate: {{ $commissionRate }},
+        barberRates: @js($barberRates),
         services: @js($services->mapWithKeys(fn ($s) => [$s->id => ['price' => (float) $s->price, 'name' => $s->name]])),
         init() {
             if (this.amountEntry) {
@@ -63,7 +64,12 @@
         get basePrice() { return this.servicePrice(this.serviceId); },
         get serviceName() { return this.services[this.serviceId]?.name ?? ''; },
         get priceChanged() { return this.hasService && Math.abs(this.usdPrice - this.basePrice) > 0.001; },
-        get barberUsd() { return this.usdPrice * this.commissionRate / 100; },
+        get effectiveCommissionRate() {
+            return Object.prototype.hasOwnProperty.call(this.barberRates, this.barberId)
+                ? Number(this.barberRates[this.barberId])
+                : this.commissionRate;
+        },
+        get barberUsd() { return this.usdPrice * this.effectiveCommissionRate / 100; },
         get studioUsd() { return this.usdPrice - this.barberUsd; }
     }">
         <form method="POST" action="{{ route('sales.store-service') }}" class="space-y-4">
@@ -241,18 +247,21 @@
                             <x-icon name="chart" class="h-4 w-4 text-amber-500" />
                             <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Desglose de comisión</span>
                         </div>
-                        <span class="text-[11px] font-medium text-slate-400">Regla: {{ (int) (100 - $commissionRate) }}% / {{ (int) $commissionRate }}%</span>
+                        <span class="text-[11px] font-medium text-slate-400">Regla:
+                            <span x-text="(100 - effectiveCommissionRate).toFixed(0)"></span>% /
+                            <span x-text="effectiveCommissionRate.toFixed(0)"></span>%
+                        </span>
                     </div>
 
                     <div class="flex h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div class="h-full bg-amber-500 transition-all duration-300" :style="`width:${100 - commissionRate}%`"></div>
-                        <div class="h-full bg-emerald-500 transition-all duration-300" :style="`width:${commissionRate}%`"></div>
+                        <div class="h-full bg-amber-500 transition-all duration-300" :style="`width:${100 - effectiveCommissionRate}%`"></div>
+                        <div class="h-full bg-emerald-500 transition-all duration-300" :style="`width:${effectiveCommissionRate}%`"></div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div class="rounded-lg bg-slate-50 p-2.5">
                             <div class="mb-1 flex items-center justify-between">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600">Estudio ({{ (int) (100 - $commissionRate) }}%)</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600">Estudio (<span x-text="(100 - effectiveCommissionRate).toFixed(0)"></span>%)</span>
                                 <x-icon name="home" class="h-3.5 w-3.5 text-amber-500" />
                             </div>
                             <p class="text-[17px] font-extrabold text-slate-800" x-text="'$' + studioUsd.toFixed(2)">$0.00</p>
@@ -260,7 +269,7 @@
                         </div>
                         <div class="rounded-lg bg-slate-50 p-2.5">
                             <div class="mb-1 flex items-center justify-between">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Barbero ({{ (int) $commissionRate }}%)</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Barbero (<span x-text="effectiveCommissionRate.toFixed(0)"></span>%)</span>
                                 <x-icon name="scissors" class="h-3.5 w-3.5 text-emerald-500" />
                             </div>
                             <p class="text-[17px] font-extrabold text-slate-800" x-text="'$' + barberUsd.toFixed(2)">$0.00</p>

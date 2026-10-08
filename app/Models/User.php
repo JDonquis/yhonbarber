@@ -28,6 +28,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'commission_rate',
         'active',
         'phone',
         'google_id',
@@ -51,6 +52,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'commission_rate' => 'decimal:2',
         'active' => 'boolean',
     ];
 
@@ -77,6 +79,15 @@ class User extends Authenticatable
     public function isBarber(): bool
     {
         return $this->role === self::ROLE_BARBER;
+    }
+
+    /**
+     * Commission rate for this user: the personal override when set,
+     * otherwise the given base rate (typically the global setting).
+     */
+    public function effectiveCommissionRate(float $base = 0): float
+    {
+        return $this->commission_rate !== null ? (float) $this->commission_rate : $base;
     }
 
     /**

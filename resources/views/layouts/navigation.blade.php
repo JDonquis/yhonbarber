@@ -8,8 +8,13 @@
 @endphp
 
 <aside x-cloak x-show="sidebarOpen || window.innerWidth >= 1024"
-       x-transition.opacity
-       class="fixed lg:static inset-y-0 left-0 z-40 w-64 shrink-0 bg-slate-900 text-slate-100 flex flex-col"
+       x-transition:enter="transition ease-out duration-300 transform"
+       x-transition:enter-start="-translate-x-full opacity-0"
+       x-transition:enter-end="translate-x-0 opacity-100"
+       x-transition:leave="transition ease-in duration-200 transform"
+       x-transition:leave-start="translate-x-0 opacity-100"
+       x-transition:leave-end="-translate-x-full opacity-0"
+       class="fixed lg:sticky lg:top-0 lg:bottom-auto lg:h-screen inset-y-0 left-0 z-40 w-64 shrink-0 bg-slate-900 text-slate-100 flex flex-col"
        @click.outside="sidebarOpen = false">
     <div class="h-16 flex items-center gap-2 px-5 border-b border-slate-800">
         <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-amber-500 text-slate-900 font-bold">YB</span>

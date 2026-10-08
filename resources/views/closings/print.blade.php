@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cierre {{ ucfirst($closing->period_type) }} · {{ $shopName }}</title>
+    <title>{{ $closing->barber_id !== null ? 'Liquidación de '.($closing->barber->name ?? 'Barbero') : 'Cierre '.ucfirst($closing->period_type) }} · {{ $shopName }}</title>
     <style>
         :root {
             --text: #0f172a;
@@ -226,9 +226,11 @@
                 </div>
             </div>
             <div class="doc-meta">
-                <span class="doc-type">Cierre {{ ucfirst($closing->period_type) }}</span>
+                <span class="doc-type">
+                    {{ $closing->barber_id !== null ? 'Liquidación · '.($closing->barber->name ?? 'Barbero') : 'Cierre '.ucfirst($closing->period_type) }}
+                </span>
                 <p class="muted">
-                    {{ $closing->period_start->format('d/m/Y') }} — {{ $closing->period_end->format('d/m/Y') }}<br>
+                    @if ($closing->barber_id !== null) {{ $closing->barber->name ?? 'Barbero' }} · @endif{{ $closing->period_start->format('d/m/Y') }} — {{ $closing->period_end->format('d/m/Y') }}<br>
                     Emitido: {{ now()->format('d/m/Y h:i a') }}
                 </p>
                 <span class="status {{ $closing->isClosed() ? 'closed' : 'open' }}">
@@ -241,6 +243,8 @@
             $services = collect($closing->details['servicios'] ?? []);
             $products = collect($closing->details['productos'] ?? []);
             $expenses = collect($closing->details['gastos'] ?? []);
+            $isBarberClosing = $closing->barber_id !== null;
+            $barberName = $closing->barber->name ?? 'Barbero';
             $serviceQty = (int) $services->sum('quantity');
             $productQty = (int) $products->sum('quantity');
             $reference = $closing->total_ves_reference > 0
@@ -260,21 +264,34 @@
                 <div class="value">{{ usd($closing->total_products_usd) }}</div>
                 <div class="hint">{{ $productQty }} artículos</div>
             </div>
-            <div class="kpi">
-                <div class="label">Comisiones</div>
-                <div class="value">{{ usd($closing->barber_commission_usd) }}</div>
-                <div class="hint">A liquidar staff</div>
-            </div>
-            <div class="kpi">
-                <div class="label">Gastos</div>
-                <div class="value">{{ usd($closing->total_expenses_usd) }}</div>
-                <div class="hint">{{ $expenses->count() }} egresos</div>
-            </div>
-            <div class="kpi highlight">
-                <div class="label">Monto tienda</div>
-                <div class="value">{{ usd($closing->shop_amount_usd) }}</div>
-                <div class="hint">Ventas − comisiones − gastos</div>
-            </div>
+            @if ($isBarberClosing)
+                <div class="kpi">
+                    <div class="label">Producción</div>
+                    <div class="value">{{ usd($closing->total_usd) }}</div>
+                    <div class="hint">{{ $closing->ticket_count }} tickets</div>
+                </div>
+                <div class="kpi highlight">
+                    <div class="label">A pagar</div>
+                    <div class="value">{{ usd($closing->barber_commission_usd) }}</div>
+                    <div class="hint">Comisión de {{ $barberName }}</div>
+                </div>
+            @else
+                <div class="kpi">
+                    <div class="label">Comisiones</div>
+                    <div class="value">{{ usd($closing->barber_commission_usd) }}</div>
+                    <div class="hint">A liquidar staff</div>
+                </div>
+                <div class="kpi">
+                    <div class="label">Gastos</div>
+                    <div class="value">{{ usd($closing->total_expenses_usd) }}</div>
+                    <div class="hint">{{ $expenses->count() }} egresos</div>
+                </div>
+                <div class="kpi highlight">
+                    <div class="label">Monto tienda</div>
+                    <div class="value">{{ usd($closing->shop_amount_usd) }}</div>
+                    <div class="hint">Ventas − comisiones − gastos</div>
+                </div>
+            @endif
         </div>
 
         <!-- Resumen del período -->
@@ -318,15 +335,17 @@
                     <span class="amount">{{ ves($reference) }}</span>
                 </div>
                 <div class="row">
-                    <span class="muted">Comisiones barberos</span>
+                    <span class="muted">{{ $isBarberClosing ? 'Comisión a pagar' : 'Comisiones barberos' }}</span>
                     <span class="amount">- {{ usd($closing->barber_commission_usd) }}</span>
                 </div>
-                <div class="row">
-                    <span class="muted">Gastos del período</span>
-                    <span class="amount">- {{ usd($closing->total_expenses_usd) }}</span>
-                </div>
+                @unless ($isBarberClosing)
+                    <div class="row">
+                        <span class="muted">Gastos del período</span>
+                        <span class="amount">- {{ usd($closing->total_expenses_usd) }}</span>
+                    </div>
+                @endunless
                 <div class="row main">
-                    <span class="strong">Ganancia neta tienda</span>
+                    <span class="strong">{{ $isBarberClosing ? 'Saldo para el estudio' : 'Ganancia neta tienda' }}</span>
                     <span class="amount emerald">{{ usd($closing->shop_amount_usd) }}</span>
                 </div>
             </div>
@@ -334,6 +353,7 @@
 
         <!-- Por barbero / método de pago -->
         <div class="two-col">
+            @unless ($isBarberClosing)
             <section>
                 <div class="section-head">
                     <h2>Por barbero</h2>
@@ -357,6 +377,7 @@
                     </tbody>
                 </table>
             </section>
+            @endunless
 
             <section>
                 <div class="section-head">
@@ -383,6 +404,7 @@
         </div>
 
         <!-- Gastos del período -->
+        @unless ($isBarberClosing)
         <section>
             <div class="section-head">
                 <h2>Gastos registrados</h2>
@@ -406,6 +428,7 @@
                 </tbody>
             </table>
         </section>
+        @endunless
 
         <!-- Servicios / productos vendidos -->
         <div class="two-col">

@@ -20,6 +20,16 @@
         <div x-data="{ sidebarOpen: false }" class="min-h-screen lg:flex">
             @include('layouts.navigation')
 
+            <!-- Fondo oscuro al abrir el menú (móvil) -->
+            <div x-cloak x-show="sidebarOpen" @click="sidebarOpen = false"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm lg:hidden"></div>
+
             <div class="flex-1 min-w-0 flex flex-col">
                 <header class="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 flex items-center justify-between gap-4 px-4 sm:px-6">
                     <div class="flex items-center gap-3 min-w-0">

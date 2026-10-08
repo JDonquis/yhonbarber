@@ -6,6 +6,9 @@
     $expenses = collect($closing->details['gastos'] ?? []);
     $expensesTotal = (float) $closing->total_expenses_usd;
 
+    $isBarberClosing = $closing->barber_id !== null;
+    $barberName = $closing->barber->name ?? 'Barbero';
+
     $serviceQty = (int) $services->sum('quantity');
     $productQty = (int) $products->sum('quantity');
     $commissionPct = (float) $closing->total_usd > 0
@@ -25,7 +28,9 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <h1 class="text-lg font-semibold text-slate-800">Cierre {{ ucfirst($closing->period_type) }}</h1>
+        <h1 class="text-lg font-semibold text-slate-800">
+            {{ $isBarberClosing ? 'Liquidación de '.$barberName : 'Cierre '.ucfirst($closing->period_type) }}
+        </h1>
     </x-slot>
 
     <div class="max-w-2xl mx-auto space-y-4">
@@ -48,8 +53,12 @@
         <!-- Título + acciones -->
         <div class="flex items-center justify-between gap-3">
             <div class="min-w-0">
-                <span class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Auditoría operativa</span>
-                <h1 class="truncate text-xl font-extrabold tracking-tight text-slate-800">Cierre {{ ucfirst($closing->period_type) }}</h1>
+                <span class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                    {{ $isBarberClosing ? 'Liquidación de barbero' : 'Auditoría operativa' }}
+                </span>
+                <h1 class="truncate text-xl font-extrabold tracking-tight text-slate-800">
+                    {{ $isBarberClosing ? $barberName : 'Cierre '.ucfirst($closing->period_type) }}
+                </h1>
             </div>
             <div class="flex shrink-0 items-center gap-2">
                 <a href="{{ route('closings.print', $closing) }}" target="_blank" title="Imprimir reporte"
@@ -63,7 +72,11 @@
         <div class="flex items-center gap-2.5 rounded-xl px-4 py-2.5 {{ $closing->isClosed() ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
             <x-icon name="{{ $closing->isClosed() ? 'check' : 'clock' }}" class="h-5 w-5 shrink-0" />
             <span class="text-xs font-medium">
-                Reporte {{ $closing->isClosed() ? 'cerrado y auditado' : 'en curso' }} — Sincronizado con las ventas del período
+                @if ($isBarberClosing)
+                    Liquidación {{ $closing->isClosed() ? 'cerrada' : 'en curso' }} — Producción y comisión de {{ $barberName }}
+                @else
+                    Reporte {{ $closing->isClosed() ? 'cerrado y auditado' : 'en curso' }} — Sincronizado con las ventas del período
+                @endif
             </span>
         </div>
 
@@ -93,38 +106,57 @@
 
             <div class="flex flex-col justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
                 <div class="mb-2 flex items-center justify-between gap-2">
-                    <span class="truncate text-xs text-slate-400">Comisiones</span>
+                    <span class="truncate text-xs text-slate-400">{{ $isBarberClosing ? 'Comisión a pagar' : 'Comisiones' }}</span>
                     <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
                         <x-icon name="users" class="h-4 w-4" />
                     </span>
                 </div>
                 <span class="truncate text-lg font-bold tracking-tight text-slate-800">{{ usd($closing->barber_commission_usd) }}</span>
-                <span class="text-[11px] font-semibold text-emerald-600">A liquidar staff · {{ $commissionPct }}%</span>
+                <span class="text-[11px] font-semibold text-emerald-600">
+                    {{ $isBarberClosing ? 'Total a liquidar' : 'A liquidar staff · '.$commissionPct.'%' }}
+                </span>
             </div>
 
-            <div class="flex flex-col justify-between rounded-xl bg-rose-50 p-4 shadow-sm ring-1 ring-rose-200">
-                <div class="mb-2 flex items-center justify-between gap-2">
-                    <span class="truncate text-xs text-rose-700">Gastos</span>
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-500 text-white">
-                        <x-icon name="minus" class="h-4 w-4" />
-                    </span>
-                </div>
-                <span class="truncate text-lg font-bold tracking-tight text-rose-700">{{ usd($expensesTotal) }}</span>
-                <span class="text-[11px] text-rose-700">{{ $expenses->count() }} egreso(s) del período</span>
-            </div>
-
-            <div class="col-span-2 flex items-center justify-between gap-3 rounded-xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-200">
-                <div class="flex items-center gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
-                        <x-icon name="dollar" class="h-5 w-5" />
-                    </span>
-                    <div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Monto tienda</span>
-                        <span class="block text-[11px] text-emerald-700">Ventas − comisiones − gastos</span>
+            @unless ($isBarberClosing)
+                <div class="flex flex-col justify-between rounded-xl bg-rose-50 p-4 shadow-sm ring-1 ring-rose-200">
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                        <span class="truncate text-xs text-rose-700">Gastos</span>
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-500 text-white">
+                            <x-icon name="minus" class="h-4 w-4" />
+                        </span>
                     </div>
+                    <span class="truncate text-lg font-bold tracking-tight text-rose-700">{{ usd($expensesTotal) }}</span>
+                    <span class="text-[11px] text-rose-700">{{ $expenses->count() }} egreso(s) del período</span>
                 </div>
-                <span class="shrink-0 text-2xl font-extrabold tracking-tight text-emerald-700">{{ usd($closing->shop_amount_usd) }}</span>
-            </div>
+            @endunless
+
+            @if ($isBarberClosing)
+                <div class="col-span-2 flex items-center justify-between gap-3 rounded-xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-200">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                            <x-icon name="dollar" class="h-5 w-5" />
+                        </span>
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Total a pagar a {{ $barberName }}</span>
+                            <span class="block text-[11px] text-emerald-700">Comisión por {{ $closing->ticket_count }} ticket(s) · Producción {{ usd($closing->total_usd) }}</span>
+                        </div>
+                    </div>
+                    <span class="shrink-0 text-2xl font-extrabold tracking-tight text-emerald-700">{{ usd($closing->barber_commission_usd) }}</span>
+                </div>
+            @else
+                <div class="col-span-2 flex items-center justify-between gap-3 rounded-xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-200">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                            <x-icon name="dollar" class="h-5 w-5" />
+                        </span>
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Monto tienda</span>
+                            <span class="block text-[11px] text-emerald-700">Ventas − comisiones − gastos</span>
+                        </div>
+                    </div>
+                    <span class="shrink-0 text-2xl font-extrabold tracking-tight text-emerald-700">{{ usd($closing->shop_amount_usd) }}</span>
+                </div>
+            @endif
         </section>
 
         <!-- Resumen del período -->
@@ -170,15 +202,17 @@
                             <span class="font-semibold text-slate-500">{{ ves($closing->total_ves_reference > 0 ? $closing->total_ves_reference : to_ves($closing->total_usd, (float) $closing->exchange_rate)) }}</span>
                         </div>
                         <div class="flex items-center justify-between border-t border-slate-200 pt-2">
-                            <span class="text-slate-500">Comisiones barberos</span>
+                            <span class="text-slate-500">{{ $isBarberClosing ? 'Comisión a pagar' : 'Comisiones barberos' }}</span>
                             <span class="font-semibold text-amber-600">- {{ usd($closing->barber_commission_usd) }}</span>
                         </div>
+                        @unless ($isBarberClosing)
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500">Gastos del período</span>
+                                <span class="font-semibold text-rose-600">- {{ usd($closing->total_expenses_usd) }}</span>
+                            </div>
+                        @endunless
                         <div class="flex items-center justify-between">
-                            <span class="text-slate-500">Gastos del período</span>
-                            <span class="font-semibold text-rose-600">- {{ usd($closing->total_expenses_usd) }}</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-emerald-700">Ganancia neta tienda</span>
+                            <span class="font-bold text-emerald-700">{{ $isBarberClosing ? 'Saldo para el estudio' : 'Ganancia neta tienda' }}</span>
                             <span class="font-extrabold text-emerald-700">{{ usd($closing->shop_amount_usd) }}</span>
                         </div>
                     </div>
@@ -202,6 +236,7 @@
             @endif
         </section>
 
+        @unless ($isBarberClosing)
         <!-- Por barbero -->
         <section class="space-y-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <div class="flex items-center justify-between">
@@ -242,6 +277,7 @@
                 @endforelse
             </div>
         </section>
+        @endunless
 
         <!-- Por método de pago -->
         <section class="space-y-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -267,6 +303,7 @@
             </div>
         </section>
 
+        @unless ($isBarberClosing)
         <!-- Gastos del período -->
         <section class="space-y-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <div class="flex items-center justify-between">
@@ -295,6 +332,7 @@
                 </div>
             @endif
         </section>
+        @endunless
 
         <!-- Servicios vendidos -->
         <section class="space-y-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -350,17 +388,23 @@
             <section class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
                 <div class="flex items-center gap-2">
                     <x-icon name="lock" class="h-5 w-5 text-rose-500" />
-                    <span class="text-sm font-bold text-slate-800">Cerrar período</span>
+                    <span class="text-sm font-bold text-slate-800">{{ $isBarberClosing ? 'Cerrar liquidación' : 'Cerrar período' }}</span>
                 </div>
-                <p class="mt-1 text-xs text-slate-400">Al cerrar, los totales quedan congelados y no se podrán registrar más ventas en este período.</p>
+                <p class="mt-1 text-xs text-slate-400">
+                    @if ($isBarberClosing)
+                        Al cerrar, los montos de la liquidación quedan congelados. No bloquea la operación del estudio.
+                    @else
+                        Al cerrar, los totales quedan congelados y no se podrán registrar más ventas en este período.
+                    @endif
+                </p>
                 <form method="POST" action="{{ route('closings.close', $closing) }}" class="mt-3 space-y-3"
-                      onsubmit="return confirm('¿Confirmas el cierre? Esta acción bloquea el período.');">
+                      onsubmit="return confirm('{{ $isBarberClosing ? '¿Confirmas el cierre de esta liquidación?' : '¿Confirmas el cierre? Esta acción bloquea el período.' }}');">
                     @csrf
                     <textarea name="notes" rows="2" placeholder="Notas del cierre (opcional)"
                               class="block w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:ring-amber-500">{{ old('notes') }}</textarea>
                     <button type="submit"
                             class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-rose-400 text-sm font-bold text-white shadow-md transition hover:opacity-95 active:scale-[0.985]">
-                        <x-icon name="lock" class="h-4 w-4" /> Cerrar y bloquear período
+                        <x-icon name="lock" class="h-4 w-4" /> {{ $isBarberClosing ? 'Cerrar liquidación' : 'Cerrar y bloquear período' }}
                     </button>
                 </form>
             </section>

@@ -21,6 +21,7 @@ class Closing extends Model
     public const STATUS_CLOSED = 'cerrado';
 
     protected $fillable = [
+        'barber_id',
         'period_type',
         'period_start',
         'period_end',
@@ -62,6 +63,16 @@ class Closing extends Model
         'closed_at' => 'datetime',
         'reopened_at' => 'datetime',
     ];
+
+    public function barber(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'barber_id')->withTrashed();
+    }
+
+    public function isForBarber(): bool
+    {
+        return $this->barber_id !== null;
+    }
 
     public function closedBy(): BelongsTo
     {

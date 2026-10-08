@@ -41,13 +41,17 @@ class ClosingService
 
     /**
      * Build the totals and breakdown for a period.
+     *
+     * When a barber is given, only their sales are considered and no shop
+     * expenses are applied (it represents a payout/liquidation for them).
      */
-    public function summarize(Carbon $start, Carbon $end): array
+    public function summarize(Carbon $start, Carbon $end, ?User $barber = null): array
     {
         /** @var Collection<int, Sale> $sales */
         $sales = Sale::query()
             ->completed()
             ->between($start, $end)
+            ->when($barber, fn ($query) => $query->where('barber_id', $barber->id))
             ->with(['items', 'barber'])
             ->get();
 
@@ -95,11 +99,13 @@ class ClosingService
 
         $total = $serviceTotal + $productTotal;
 
-        $expenses = Expense::query()
-            ->betweenDates($start, $end)
-            ->orderBy('expense_date')
-            ->orderBy('id')
-            ->get();
+        $expenses = $barber
+            ? collect()
+            : Expense::query()
+                ->betweenDates($start, $end)
+                ->orderBy('expense_date')
+                ->orderBy('id')
+                ->get();
         $expensesTotal = (float) $expenses->sum('amount_usd');
 
         return [
@@ -130,16 +136,17 @@ class ClosingService
     /**
      * Create (or refresh) an open closing record for the given period.
      */
-    public function generate(string $type, ?Carbon $date = null, ?User $user = null): Closing
+    public function generate(string $type, ?Carbon $date = null, ?User $user = null, ?User $barber = null): Closing
     {
         [$start, $end] = $this->periodRange($type, $date);
-        $summary = $this->summarize($start, $end);
+        $summary = $this->summarize($start, $end, $barber);
         $referenceRate = $this->rates->current();
         $averageRate = $summary['total_usd'] > 0
             ? round($summary['total_ves'] / $summary['total_usd'], 4)
             : 0;
 
         $closing = Closing::query()->firstOrNew([
+            'barber_id' => $barber?->id,
             'period_type' => $type,
             'period_start' => $start->toDateString(),
             'period_end' => $end->toDateString(),
@@ -173,7 +180,7 @@ class ClosingService
         }
 
         [$start, $end] = [$closing->period_start->copy()->startOfDay(), $closing->period_end->copy()->endOfDay()];
-        $summary = $this->summarize($start, $end);
+        $summary = $this->summarize($start, $end, $closing->barber);
         $referenceRate = $this->rates->current();
         $averageRate = $summary['total_usd'] > 0
             ? round($summary['total_ves'] / $summary['total_usd'], 4)
@@ -217,6 +224,7 @@ class ClosingService
     public function isPeriodClosed(Carbon $moment): bool
     {
         return Closing::query()
+            ->whereNull('barber_id')
             ->where('status', Closing::STATUS_CLOSED)
             ->whereDate('period_start', '<=', $moment)
             ->whereDate('period_end', '>=', $moment)

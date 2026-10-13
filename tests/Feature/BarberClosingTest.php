@@ -43,6 +43,47 @@ class BarberClosingTest extends TestCase
         ])->assertRedirect();
     }
 
+    public function test_admin_can_generate_a_closing_for_a_custom_date_range(): void
+    {
+        $this->setting('commission_rate', 40);
+        $service = $this->service(10);
+        $admin = $this->admin();
+        $barber = $this->barber();
+
+        $this->registerSale($admin, $service, $barber);
+        Sale::query()->latest('id')->firstOrFail()->update(['sold_at' => now()->subDays(10)]);
+
+        $this->registerSale($admin, $service, $barber);
+
+        $this->actingAs($admin)->post(route('closings.generate'), [
+            'period_type' => 'rango',
+            'start_date' => now()->subDays(2)->toDateString(),
+            'end_date' => now()->toDateString(),
+        ])->assertRedirect();
+
+        $closing = Closing::query()->where('period_type', 'rango')->firstOrFail();
+
+        $this->assertSame(now()->subDays(2)->toDateString(), $closing->period_start->toDateString());
+        $this->assertSame(now()->toDateString(), $closing->period_end->toDateString());
+        $this->assertSame('10.00', $closing->total_usd);
+        $this->assertSame(1, $closing->ticket_count);
+
+        $this->actingAs($admin)->get(route('closings.show', $closing))->assertOk();
+        $this->actingAs($admin)->get(route('closings.print', $closing))->assertOk();
+        $this->actingAs($admin)->get(route('closings.index'))->assertOk()->assertSee('Rangos');
+    }
+
+    public function test_custom_range_requires_end_after_start(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('closings.generate'), [
+            'period_type' => 'rango',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->subDays(2)->toDateString(),
+        ])->assertSessionHasErrors('end_date');
+    }
+
     public function test_admin_can_generate_a_barber_closing_for_a_period(): void
     {
         $this->setting('commission_rate', 40);

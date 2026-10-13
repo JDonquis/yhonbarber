@@ -16,6 +16,8 @@ class Closing extends Model
 
     public const PERIOD_MONTHLY = 'mensual';
 
+    public const PERIOD_CUSTOM = 'rango';
+
     public const STATUS_OPEN = 'abierto';
 
     public const STATUS_CLOSED = 'cerrado';

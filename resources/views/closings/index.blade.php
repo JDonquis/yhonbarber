@@ -41,6 +41,7 @@
         filter: 'all',
         scope: 'all',
         open: false,
+        periodType: '{{ old('period_type', 'diario') }}',
         closeScope: 'general',
         barberId: '',
         get filteredClosings() {
@@ -62,11 +63,13 @@
         get dailyCount() { return this.closings.filter((c) => c.period === 'diario').length; },
         get weeklyCount() { return this.closings.filter((c) => c.period === 'semanal').length; },
         get monthlyCount() { return this.closings.filter((c) => c.period === 'mensual').length; },
+        get rangeCount() { return this.closings.filter((c) => c.period === 'rango').length; },
         get generalCount() { return this.closings.filter((c) => ! c.isBarber).length; },
         get barberCount() { return this.closings.filter((c) => c.isBarber).length; },
         periodClass(period) {
             if (period === 'diario') return 'bg-amber-100 text-amber-700';
             if (period === 'semanal') return 'bg-emerald-100 text-emerald-700';
+            if (period === 'rango') return 'bg-violet-100 text-violet-700';
             return 'bg-sky-100 text-sky-700';
         },
         formatUsd(value) {
@@ -146,11 +149,12 @@
                 @csrf
                 <div class="space-y-1.5">
                     <label for="period_type" class="text-xs font-medium text-slate-500">Tipo de período</label>
-                    <select id="period_type" name="period_type"
+                    <select id="period_type" name="period_type" x-model="periodType"
                             class="block h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 focus:border-amber-500 focus:bg-white focus:ring-amber-500">
                         <option value="diario">Diario (corte del día)</option>
                         <option value="semanal">Semanal (7 días)</option>
                         <option value="mensual">Mensual (cierre calendario)</option>
+                        <option value="rango">Rango personalizado (fecha a fecha)</option>
                     </select>
                 </div>
                 <div class="space-y-2">
@@ -205,11 +209,27 @@
                     <input type="hidden" name="barber_id" :value="closeScope === 'barber' ? barberId : ''">
                     <x-input-error :messages="$errors->get('barber_id')" />
                 </div>
-                <div class="space-y-1.5">
+                <div class="space-y-1.5" x-show="periodType !== 'rango'" x-cloak x-transition.opacity>
                     <label for="date" class="text-xs font-medium text-slate-500">Fecha de referencia</label>
-                    <input id="date" name="date" type="date" required value="{{ old('date', now()->toDateString()) }}"
+                    <input id="date" name="date" type="date" :required="periodType !== 'rango'" value="{{ old('date', now()->toDateString()) }}"
                            class="block h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 focus:border-amber-500 focus:bg-white focus:ring-amber-500" />
                     <x-input-error :messages="$errors->get('date')" />
+                </div>
+                <div class="grid grid-cols-2 gap-3" x-show="periodType === 'rango'" x-cloak x-transition.opacity>
+                    <div class="space-y-1.5">
+                        <label for="start_date" class="text-xs font-medium text-slate-500">Desde</label>
+                        <input id="start_date" name="start_date" type="date" :required="periodType === 'rango'"
+                               value="{{ old('start_date', now()->startOfMonth()->toDateString()) }}"
+                               class="block h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 focus:border-amber-500 focus:bg-white focus:ring-amber-500" />
+                        <x-input-error :messages="$errors->get('start_date')" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="end_date" class="text-xs font-medium text-slate-500">Hasta</label>
+                        <input id="end_date" name="end_date" type="date" :required="periodType === 'rango'"
+                               value="{{ old('end_date', now()->toDateString()) }}"
+                               class="block h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 focus:border-amber-500 focus:bg-white focus:ring-amber-500" />
+                        <x-input-error :messages="$errors->get('end_date')" />
+                    </div>
                 </div>
                 <button type="submit" :disabled="closeScope === 'barber' && ! barberId"
                         class="flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-amber-500 text-sm font-bold text-slate-900 shadow-md shadow-amber-500/25 transition hover:bg-amber-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50">
@@ -244,6 +264,11 @@
                         class="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-xs font-semibold transition active:scale-95"
                         :class="filter === 'mensual' ? 'bg-amber-500 text-slate-900 shadow-sm' : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:text-slate-700'">
                     Mensuales (<span x-text="monthlyCount"></span>)
+                </button>
+                <button type="button" @click="filter = 'rango'"
+                        class="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-xs font-semibold transition active:scale-95"
+                        :class="filter === 'rango' ? 'bg-amber-500 text-slate-900 shadow-sm' : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:text-slate-700'">
+                    Rangos (<span x-text="rangeCount"></span>)
                 </button>
             </div>
 

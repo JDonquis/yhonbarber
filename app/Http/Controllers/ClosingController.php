@@ -31,8 +31,10 @@ class ClosingController extends Controller
     public function generate(Request $request)
     {
         $data = $request->validate([
-            'period_type' => ['required', 'in:diario,semanal,mensual'],
-            'date' => ['required', 'date'],
+            'period_type' => ['required', 'in:diario,semanal,mensual,rango'],
+            'date' => ['nullable', 'date', 'required_unless:period_type,rango'],
+            'start_date' => ['nullable', 'date', 'required_if:period_type,rango'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date', 'required_if:period_type,rango'],
             'barber_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
@@ -42,11 +44,15 @@ class ClosingController extends Controller
             $barber = User::query()->barbers()->findOrFail($data['barber_id']);
         }
 
+        $isCustom = $data['period_type'] === Closing::PERIOD_CUSTOM;
+
         $closing = $this->closings->generate(
             $data['period_type'],
-            Carbon::parse($data['date']),
+            $isCustom ? null : Carbon::parse($data['date']),
             $request->user(),
             $barber,
+            $isCustom ? Carbon::parse($data['start_date']) : null,
+            $isCustom ? Carbon::parse($data['end_date']) : null,
         );
 
         return redirect()->route('closings.show', $closing)->with('status', $barber ? 'Cierre de barbero generado.' : 'Reporte generado.');

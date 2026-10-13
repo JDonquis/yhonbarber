@@ -135,10 +135,19 @@ class ClosingService
 
     /**
      * Create (or refresh) an open closing record for the given period.
+     *
+     * A custom period type uses the explicit $start and $end bounds instead
+     * of the calendar presets (daily/weekly/monthly).
      */
-    public function generate(string $type, ?Carbon $date = null, ?User $user = null, ?User $barber = null): Closing
+    public function generate(string $type, ?Carbon $date = null, ?User $user = null, ?User $barber = null, ?Carbon $start = null, ?Carbon $end = null): Closing
     {
-        [$start, $end] = $this->periodRange($type, $date);
+        if ($type === Closing::PERIOD_CUSTOM && $start && $end) {
+            $start = $start->copy()->startOfDay();
+            $end = $end->copy()->endOfDay();
+        } else {
+            [$start, $end] = $this->periodRange($type, $date);
+        }
+
         $summary = $this->summarize($start, $end, $barber);
         $referenceRate = $this->rates->current();
         $averageRate = $summary['total_usd'] > 0

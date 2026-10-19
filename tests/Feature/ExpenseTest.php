@@ -107,6 +107,89 @@ class ExpenseTest extends TestCase
             ->assertViewHas('todayExpenses', 2.0);
     }
 
+    public function test_expenses_can_be_filtered_by_a_custom_date_range(): void
+    {
+        $admin = $this->admin();
+
+        Expense::create(['concept' => 'Reciente', 'amount_usd' => 10, 'expense_date' => now()->toDateString(), 'user_id' => $admin->id]);
+        Expense::create(['concept' => 'Limite', 'amount_usd' => 5, 'expense_date' => now()->subDays(5)->toDateString(), 'user_id' => $admin->id]);
+        Expense::create(['concept' => 'Antiguo', 'amount_usd' => 20, 'expense_date' => now()->subDays(10)->toDateString(), 'user_id' => $admin->id]);
+
+        $from = now()->subDays(6)->toDateString();
+        $to = now()->toDateString();
+
+        $response = $this->actingAs($admin)->get(route('expenses.index', [
+            'period' => 'rango',
+            'from' => $from,
+            'to' => $to,
+        ]))->assertOk()->assertViewHas('stats', function (array $stats) {
+            return $stats['filtered'] === 15.0 && $stats['filteredCount'] === 2;
+        });
+
+        $this->assertSame(['Reciente', 'Limite'], $response->viewData('expenses')->pluck('concept')->all());
+        $this->assertSame($from, $response->viewData('from'));
+        $this->assertSame($to, $response->viewData('to'));
+    }
+
+    public function test_expense_range_filter_can_be_updated_without_reloading_the_page(): void
+    {
+        $admin = $this->admin();
+
+        Expense::create(['concept' => 'Reciente', 'amount_usd' => 10, 'expense_date' => now()->toDateString(), 'user_id' => $admin->id]);
+        Expense::create(['concept' => 'Antiguo', 'amount_usd' => 20, 'expense_date' => now()->subDays(10)->toDateString(), 'user_id' => $admin->id]);
+
+        $from = now()->subDays(2)->toDateString();
+        $to = now()->toDateString();
+
+        $response = $this->actingAs($admin)->getJson(route('expenses.filter', [
+            'period' => 'rango',
+            'from' => $from,
+            'to' => $to,
+        ]))->assertOk()->assertJsonStructure([
+            'html', 'label', 'filtered', 'filtered_count', 'period', 'from', 'to',
+        ]);
+
+        $data = $response->json();
+        $this->assertSame('rango', $data['period']);
+        $this->assertSame($from, $data['from']);
+        $this->assertSame($to, $data['to']);
+        $this->assertSame('$ 10,00', $data['filtered']);
+        $this->assertSame(1, $data['filtered_count']);
+        $this->assertStringContainsString('Reciente', $data['html']);
+        $this->assertStringNotContainsString('Antiguo', $data['html']);
+    }
+
+    public function test_expense_range_filter_pagination_points_to_the_index_page(): void
+    {
+        $admin = $this->admin();
+
+        foreach (range(1, 21) as $index) {
+            Expense::create([
+                'concept' => 'Gasto '.$index,
+                'amount_usd' => 1,
+                'expense_date' => now()->toDateString(),
+                'user_id' => $admin->id,
+            ]);
+        }
+
+        $html = $this->actingAs($admin)->getJson(route('expenses.filter', [
+            'period' => 'rango',
+            'from' => now()->toDateString(),
+            'to' => now()->toDateString(),
+        ]))->assertOk()->json('html');
+
+        $this->assertStringContainsString(route('expenses.index'), $html);
+        $this->assertStringContainsString('page=2', $html);
+        $this->assertStringNotContainsString(route('expenses.filter'), $html);
+    }
+
+    public function test_expense_range_filter_endpoint_is_admin_only(): void
+    {
+        $this->actingAs($this->barber())
+            ->getJson(route('expenses.filter'))
+            ->assertForbidden();
+    }
+
     public function test_closing_summary_subtracts_expenses_from_the_store_amount(): void
     {
         $this->setting('commission_rate', 40);

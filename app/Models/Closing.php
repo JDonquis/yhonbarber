@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Closing extends Model
 {
@@ -69,6 +70,14 @@ class Closing extends Model
     public function barber(): BelongsTo
     {
         return $this->belongsTo(User::class, 'barber_id')->withTrashed();
+    }
+
+    /**
+     * Sales settled (paid) by this closing once it is closed.
+     */
+    public function sales(): BelongsToMany
+    {
+        return $this->belongsToMany(Sale::class, 'closing_sale');
     }
 
     public function isForBarber(): bool

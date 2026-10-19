@@ -35,6 +35,8 @@ Route::middleware('auth')->group(function () {
 
     // Administración
     Route::middleware('role:admin')->group(function () {
+        Route::get('/dashboard/ranking', [DashboardController::class, 'ranking'])->name('dashboard.ranking');
+
         Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
 
         // Venta de productos: solo administradores
@@ -59,6 +61,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/products/{product}/stock', [StockMovementController::class, 'index'])->name('products.stock.index');
         Route::post('/products/{product}/stock', [StockMovementController::class, 'store'])->name('products.stock.store');
 
+        Route::get('/expenses/filter', [ExpenseController::class, 'filter'])->name('expenses.filter');
         Route::resource('expenses', ExpenseController::class)->except(['show']);
 
         Route::get('/closings', [ClosingController::class, 'index'])->name('closings.index');

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sale extends Model
@@ -64,9 +65,25 @@ class Sale extends Model
         return $this->hasMany(SaleItem::class);
     }
 
+    /**
+     * Closed closings that settled (paid) this sale.
+     */
+    public function closings(): BelongsToMany
+    {
+        return $this->belongsToMany(Closing::class, 'closing_sale');
+    }
+
     public function scopeCompleted($query)
     {
         return $query->where('status', self::STATUS_COMPLETED);
+    }
+
+    /**
+     * Sales that have not been settled by any closed closing.
+     */
+    public function scopeUnsettled($query)
+    {
+        return $query->whereDoesntHave('closings');
     }
 
     public function scopeBetween($query, $start, $end)

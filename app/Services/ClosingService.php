@@ -9,6 +9,7 @@ use App\Models\SaleItem;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ClosingService
 {
@@ -188,28 +189,56 @@ class ClosingService
             return $closing;
         }
 
+        return DB::transaction(function () use ($closing, $user, $notes) {
+            [$start, $end] = [$closing->period_start->copy()->startOfDay(), $closing->period_end->copy()->endOfDay()];
+            $summary = $this->summarize($start, $end, $closing->barber);
+            $referenceRate = $this->rates->current();
+            $averageRate = $summary['total_usd'] > 0
+                ? round($summary['total_ves'] / $summary['total_usd'], 4)
+                : 0;
+
+            $closing->fill($summary + [
+                'exchange_rate' => $referenceRate,
+                'average_rate' => $averageRate,
+                'total_ves_reference' => round($summary['total_usd'] * $referenceRate, 2),
+                'status' => Closing::STATUS_CLOSED,
+                'closed_by' => $user->id,
+                'closed_at' => now(),
+                'reopened_by' => null,
+                'reopened_at' => null,
+                'notes' => $notes ?? $closing->notes,
+            ]);
+
+            $closing->save();
+
+            $this->settleSales($closing);
+
+            return $closing;
+        });
+    }
+
+    /**
+     * Mark the sales covered by a closed closing as settled (paid).
+     *
+     * A sale can be covered by several overlapping closings; it only becomes
+     * pending again once none of them remain closed.
+     */
+    protected function settleSales(Closing $closing): void
+    {
         [$start, $end] = [$closing->period_start->copy()->startOfDay(), $closing->period_end->copy()->endOfDay()];
-        $summary = $this->summarize($start, $end, $closing->barber);
-        $referenceRate = $this->rates->current();
-        $averageRate = $summary['total_usd'] > 0
-            ? round($summary['total_ves'] / $summary['total_usd'], 4)
-            : 0;
 
-        $closing->fill($summary + [
-            'exchange_rate' => $referenceRate,
-            'average_rate' => $averageRate,
-            'total_ves_reference' => round($summary['total_usd'] * $referenceRate, 2),
-            'status' => Closing::STATUS_CLOSED,
-            'closed_by' => $user->id,
-            'closed_at' => now(),
-            'reopened_by' => null,
-            'reopened_at' => null,
-            'notes' => $notes ?? $closing->notes,
-        ]);
+        $saleIds = Sale::query()
+            ->completed()
+            ->whereBetween('sold_at', [$start, $end])
+            ->when(
+                $closing->barber_id,
+                fn ($query) => $query->where('barber_id', $closing->barber_id),
+                fn ($query) => $query->whereNotNull('barber_id'),
+            )
+            ->pluck('id')
+            ->all();
 
-        $closing->save();
-
-        return $closing;
+        $closing->sales()->syncWithoutDetaching($saleIds);
     }
 
     /**
@@ -221,13 +250,17 @@ class ClosingService
             return $closing;
         }
 
-        $closing->update([
-            'status' => Closing::STATUS_OPEN,
-            'reopened_by' => $user->id,
-            'reopened_at' => now(),
-        ]);
+        return DB::transaction(function () use ($closing, $user) {
+            $closing->sales()->detach();
 
-        return $closing->refresh();
+            $closing->update([
+                'status' => Closing::STATUS_OPEN,
+                'reopened_by' => $user->id,
+                'reopened_at' => now(),
+            ]);
+
+            return $closing->refresh();
+        });
     }
 
     public function isPeriodClosed(Carbon $moment): bool

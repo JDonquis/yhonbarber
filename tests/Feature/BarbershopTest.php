@@ -728,4 +728,79 @@ class BarbershopTest extends TestCase
             ->assertOk()
             ->assertSee('Ganancia neta');
     }
+
+    public function test_barber_ranking_can_be_filtered_by_date_range(): void
+    {
+        $this->setting('commission_rate', 40);
+        $service = $this->service(10);
+        $admin = $this->admin();
+        $ana = $this->barber();
+        $beto = $this->barber();
+
+        $registerSale = function (User $barber, $soldAt) use ($admin, $service) {
+            $this->actingAs($admin)->post(route('sales.store-service'), [
+                'service_id' => $service->id,
+                'barber_id' => $barber->id,
+                'payment_currency' => 'USD',
+            ]);
+
+            Sale::query()->latest('id')->firstOrFail()->update(['sold_at' => $soldAt]);
+        };
+
+        $registerSale($ana, now()->subDays(10));
+        $registerSale($ana, now());
+        $registerSale($ana, now());
+        $registerSale($beto, now()->subDays(10));
+        $registerSale($beto, now());
+
+        $response = $this->actingAs($admin)->get(route('dashboard', [
+            'ranking_start' => now()->subDays(2)->toDateString(),
+            'ranking_end' => now()->toDateString(),
+        ]))->assertOk()->assertSee('Ranking de barberos');
+
+        $ranking = $response->viewData('topBarbers');
+        $this->assertSame($ana->id, $ranking->first()->id);
+        $this->assertSame(2, (int) $ranking->first()->cuts);
+        $this->assertSame(1, (int) $ranking->firstWhere('id', $beto->id)->cuts);
+
+        $oldResponse = $this->actingAs($admin)->get(route('dashboard', [
+            'ranking_start' => now()->subDays(10)->toDateString(),
+            'ranking_end' => now()->subDays(10)->toDateString(),
+        ]))->assertOk();
+
+        $oldRanking = $oldResponse->viewData('topBarbers');
+        $this->assertSame(1, (int) $oldRanking->firstWhere('id', $ana->id)->cuts);
+        $this->assertSame(1, (int) $oldRanking->firstWhere('id', $beto->id)->cuts);
+    }
+
+    public function test_ranking_filter_can_be_updated_without_reloading_the_page(): void
+    {
+        $this->setting('commission_rate', 40);
+        $service = $this->service(10);
+        $admin = $this->admin();
+        $barber = $this->barber();
+
+        $this->actingAs($admin)->post(route('sales.store-service'), [
+            'service_id' => $service->id,
+            'barber_id' => $barber->id,
+            'payment_currency' => 'USD',
+        ]);
+
+        $response = $this->actingAs($admin)->getJson(route('dashboard.ranking', [
+            'ranking_start' => now()->toDateString(),
+            'ranking_end' => now()->toDateString(),
+        ]))->assertOk()->assertJsonStructure(['html', 'start_date', 'end_date', 'label']);
+
+        $this->assertSame(now()->toDateString(), $response->json('start_date'));
+        $this->assertSame(now()->toDateString(), $response->json('end_date'));
+        $this->assertStringContainsString($barber->name, $response->json('html'));
+        $this->assertStringContainsString('1 corte(s) completados', $response->json('html'));
+    }
+
+    public function test_ranking_filter_endpoint_is_admin_only(): void
+    {
+        $this->actingAs($this->barber())
+            ->getJson(route('dashboard.ranking'))
+            ->assertForbidden();
+    }
 }

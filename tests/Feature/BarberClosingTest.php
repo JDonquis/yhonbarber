@@ -391,4 +391,57 @@ class BarberClosingTest extends TestCase
 
         $this->assertSame(4.0, (float) $response->viewData('myPending'));
     }
+
+    public function test_admin_can_delete_a_closing_and_restore_the_pending_balance(): void
+    {
+        $this->setting('commission_rate', 40);
+        $service = $this->service(10);
+        $admin = $this->admin();
+        $barber = $this->barber();
+
+        $this->registerSale($admin, $service, $barber);
+
+        $this->actingAs($admin)->post(route('closings.generate'), [
+            'period_type' => 'diario',
+            'date' => now()->toDateString(),
+            'barber_id' => $barber->id,
+        ])->assertRedirect();
+
+        $closing = Closing::query()->where('barber_id', $barber->id)->firstOrFail();
+        $this->actingAs($admin)->post(route('closings.close', $closing), [])->assertRedirect();
+
+        $response = $this->actingAs($admin)->get(route('dashboard'))->assertOk();
+        $this->assertSame(0.0, $this->barberBalance($response, $barber));
+
+        $this->actingAs($admin)->delete(route('closings.destroy', $closing))
+            ->assertRedirect(route('closings.index'));
+
+        $this->assertDatabaseMissing('closings', ['id' => $closing->id]);
+
+        $response = $this->actingAs($admin)->get(route('dashboard'))->assertOk();
+        $this->assertSame(4.0, $this->barberBalance($response, $barber));
+    }
+
+    public function test_barber_cannot_delete_a_closing(): void
+    {
+        $this->setting('commission_rate', 40);
+        $service = $this->service(10);
+        $admin = $this->admin();
+        $barber = $this->barber();
+
+        $this->registerSale($admin, $service, $barber);
+
+        $this->actingAs($admin)->post(route('closings.generate'), [
+            'period_type' => 'diario',
+            'date' => now()->toDateString(),
+            'barber_id' => $barber->id,
+        ])->assertRedirect();
+
+        $closing = Closing::query()->where('barber_id', $barber->id)->firstOrFail();
+
+        $this->actingAs($barber)->delete(route('closings.destroy', $closing))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('closings', ['id' => $closing->id]);
+    }
 }

@@ -81,6 +81,13 @@ class ClosingController extends Controller
         return redirect()->route('closings.show', $closing)->with('status', 'Período reabierto. Ya puedes registrar o corregir ventas.');
     }
 
+    public function destroy(Closing $closing)
+    {
+        $closing->delete();
+
+        return redirect()->route('closings.index')->with('status', 'Cierre eliminado correctamente.');
+    }
+
     public function print(Closing $closing)
     {
         return view('closings.print', compact('closing'));

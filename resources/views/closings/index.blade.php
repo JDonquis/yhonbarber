@@ -26,6 +26,7 @@
             'productQty' => (int) $products->sum('quantity'),
             'showUrl' => route('closings.show', $closing),
             'printUrl' => route('closings.print', $closing),
+            'deleteUrl' => route('closings.destroy', $closing),
         ];
     })->values();
 @endphp
@@ -411,6 +412,15 @@
                            class="flex h-[42px] items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-4 text-xs font-semibold text-slate-500 transition hover:bg-slate-200">
                             <x-icon name="printer" class="h-4 w-4" /> PDF
                         </a>
+                        <form method="POST" :action="closing.deleteUrl"
+                              @submit="if (! confirm(closing.closed ? '¿Eliminar este cierre? Las comisiones volverán a quedar pendientes si no están cubiertas por otro cierre.' : '¿Eliminar este cierre?')) $event.preventDefault()">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" title="Eliminar cierre"
+                                    class="flex h-[42px] w-[42px] items-center justify-center rounded-lg bg-rose-50 text-rose-500 transition hover:bg-rose-100 active:scale-95">
+                                <x-icon name="trash" class="h-4 w-4" />
+                            </button>
+                        </form>
                     </div>
                 </article>
             </template>

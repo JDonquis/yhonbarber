@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/closings/{closing}', [ClosingController::class, 'show'])->name('closings.show');
         Route::post('/closings/{closing}/close', [ClosingController::class, 'close'])->name('closings.close');
         Route::post('/closings/{closing}/reopen', [ClosingController::class, 'reopen'])->name('closings.reopen');
+        Route::delete('/closings/{closing}', [ClosingController::class, 'destroy'])->name('closings.destroy');
         Route::get('/closings/{closing}/print', [ClosingController::class, 'print'])->name('closings.print');
 
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
